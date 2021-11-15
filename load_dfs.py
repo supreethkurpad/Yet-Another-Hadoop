@@ -36,6 +36,7 @@ if __name__ == '__main__':
         exit(1)
     config_path = argv[1]
     
+    #open()
 
     # read config
     config = {}
@@ -43,14 +44,23 @@ if __name__ == '__main__':
         config = json.load(f) 
 
     # set up logging paths. writes to /dev/null by default 
-    DN_LOG_FILE = config.get('datanode_log_path', NULL_FILE)
-    NN_LOG_FILE = config.get('namenode_log_path', NULL_FILE)
-    
+    #DN_LOG_FILE = config.get('datanode_log_path', NULL_FILE)
+    #NN_LOG_FILE = config.get('namenode_log_path', NULL_FILE)
+    DN_LOG_FILE =NULL_FILE
+    NN_LOG_FILE =NULL_FILE
     NN_LOG_FILE = open(NN_LOG_FILE, 'w')
     DN_LOG_FILE = open(DN_LOG_FILE, 'w')
 
     # ports to open datanodes on
     ports = getPortNumbers(config['num_datanodes'])
+    with open(os.path.join(HADOOP_HOME,'tmp','ports.txt'),'w+') as f:
+        config['path_to_ports']=os.path.join(HADOOP_HOME,'tmp','ports.txt')
+        for i in ports:
+            print(i,file=f)
+
+    
+
+
 
     namenode = os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')
     namenode_args = [DEFAULT_PORT, ports, config_path, True]
@@ -60,22 +70,30 @@ if __name__ == '__main__':
     with open(argpath, 'wb') as f:
         pickle.dump(namenode_args, file=f)
 
+    #add path to argpath
+    config['path_to_argpath']=argpath
+    
+
     # start namenode process
-    namenode_process = subprocess.Popen(['python', namenode, argpath], stderr=stdout, stdout=NN_LOG_FILE)
+    #namenode_process = subprocess.Popen(['python', namenode, argpath], stderr=stdout, stdout=NN_LOG_FILE)
     
     # log pid to tmp file so stop-all can terminate it.
-    with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'a+') as f:
-        print(namenode_process.pid, file=f)
+    #with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'a+') as f:
+    #    print(namenode_process.pid, file=f)
 
-    # TODO start datanode processes
-    # argpath for datanode not given
     argpathD = os.path.join(HADOOP_HOME, 'tmp', 'datanode_arg.pickle')
+
+    #add path to datanode argpath
+    config['path_to_datanode_argpath']=argpathD
+
     numD = config['num_datanodes']
     datanode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'datanode.py')
     pidD = list()
     while numD:
-        datanode_process = subprocess.Popen(['python', datanode, argpathD], stderr=stdout, stdout=DN_LOG_FILE)
-        pidD.append(datanode_process.pid)
-        with open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'a+') as f:
-            print(datanode_process.pid, file=f)
+        #datanode_process = subprocess.Popen(['python', datanode, argpathD], stderr=stdout, stdout=DN_LOG_FILE)
+        #pidD.append(datanode_process.pid)
+        #with open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'a+') as f:
+         #   print(datanode_process.pid, file=f)
         numD -= 1
+    with open(config_path,'w') as f:
+        json.dump(config, f)

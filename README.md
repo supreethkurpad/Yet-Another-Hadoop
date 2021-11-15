@@ -6,7 +6,7 @@
 ## Setting up the virtualenv. Install if it doesn't exist
 ```python -m venv hadoop_env```
 ```source hadoop_env/bin/activate```
-```pip install requirements.txt```
+```pip install -r requirements.txt```
 
 ## Deactivating venv
 ```pip freeze > requirements.txt```
