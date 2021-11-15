@@ -2,7 +2,7 @@ from sys import argv
 import json
 import os
 
-HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/suvigya/PythonCode/Yet-Another-Hadoop/')
+HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
 
 def checkNameNode(config):
     """
@@ -37,6 +37,20 @@ def checkDataNodes(config):
         Write details to the dfs_setup_config
     """
     path_to_datanodes = config['path_to_datanodes']
+    list_of_datanode_paths=[]
+    for i in range(config['num_datanodes']):
+        data_node = os.path.join(config['path_to_datanodes'], 'datanode'+str(i+1))
+        #print(data_node)
+        list_of_datanode_paths.append(data_node)
+        try:
+            os.mkdir(data_node)
+        except FileExistsError as e:
+            print("Datanodes already exist. Using existing datanode, might require format...")
+    with open(config['dfs_setup_config'], 'w+') as f:
+        dfs_config = config.copy()
+        dfs_config['path_to_each_datanode'] = list_of_datanode_paths
+        json.dump(dfs_config, f)
+
     
     if not os.path.exists(path_to_datanodes):
         print("Invalid directory for datanodes. Does not exist")
