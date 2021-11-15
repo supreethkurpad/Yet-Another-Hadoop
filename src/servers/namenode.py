@@ -3,9 +3,10 @@ from datetime import datetime
 import json
 from flask.logging import default_handler
 import os
+from sys import argv
 
 class NameNode :
-    def __init__(self, port, path_to_config=None, primary=True, dn_ports=[]):
+    def __init__(self, port, dn_ports=[], path_to_config=None, primary=True):
         # init 
         self.server = Flask(__name__)
         self.port = port 
@@ -71,5 +72,6 @@ class NameNode :
         pass
 
 if __name__ == "__main__":
-    path_to_config = '$MYHADOOP_HOME/configs/config.json'
-    namenode = NameNode(5000, path_to_config, primary=True)
+    # TODO unpickle args and pass them
+    args = argv[1:]
+    namenode = NameNode(*args)
