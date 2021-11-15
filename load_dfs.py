@@ -68,3 +68,14 @@ if __name__ == '__main__':
         print(namenode_process.pid, file=f)
 
     # TODO start datanode processes
+    # argpath for datanode not given
+    argpathD = os.path.join(HADOOP_HOME, 'tmp', 'datanode_arg.pickle')
+    numD = config['num_datanodes']
+    datanode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'datanode.py')
+    pidD = list()
+    while numD:
+        datanode_process = subprocess.Popen(['python', datanode, argpathD], stderr=stdout, stdout=DN_LOG_FILE)
+        pidD.append(datanode_process.pid)
+        with open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'a+') as f:
+            print(datanode_process.pid, file=f)
+        numD -= 1
