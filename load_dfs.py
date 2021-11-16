@@ -77,11 +77,13 @@ if __name__ == '__main__':
     datanode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'datanode.py')
     pidD = []
 
+    pid_file = os.path.join(HADOOP_HOME, "tmp", "pids.txt")
     open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'w').close()
 
     with open('start-datanodes.sh', 'w') as f:
         for i in range(numD):
-            print('python3', datanode, i+1, ports[i], config['block_size'], '&', file=f)
-
-    start_sh = os.path.join(HADOOP_HOME, 'start-datanodes.sh')
-    subprocess.Popen(["sh", start_sh])
+            datanode_process = subprocess.Popen(['python3', datanode, str(i+1), str(ports[i]), str(config['block_size'])], stderr=stdout)
+            with open(pid_file, 'a') as f:
+                print(datanode_process.pid, file=f)
+    
+    
