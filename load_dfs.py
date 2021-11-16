@@ -6,6 +6,7 @@ import os
 from sys import argv, stdout
 from functools import reduce 
 import pickle
+from contextlib import closing
 
 DEFAULT_PORT=5000
 NULL_FILE=os.devnull
@@ -14,18 +15,12 @@ HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/suvigya/PythonCode/Yet-Another
 def getPortNumbers(n) -> list:
     ports = []
     while n:
-        port = random.randint(1024, 65535)
-        location = ("127.0.0.1", port)
-        a_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        result_of_check = a_socket.connect_ex(location)
-
-        if result_of_check == 0:
-            n -= 1
-            ports.append(port)
-        else:
-            continue
-    
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as a_socket:
+            a_socket.bind(('', 0))
+            a_socket.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            ports.append(a_socket.getsockname()[1])
+            n-=1
+        
     return ports    
 
 if __name__ == '__main__':
@@ -36,8 +31,6 @@ if __name__ == '__main__':
         exit(1)
     config_path = argv[1]
     
-    #open()
-
     # read config
     config = {}
     with open(config_path, 'r') as f:
@@ -59,9 +52,6 @@ if __name__ == '__main__':
             print(i,file=f)
 
     
-
-
-
     namenode = os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')
     namenode_args = [DEFAULT_PORT, ports, config_path, True]
 
@@ -75,16 +65,11 @@ if __name__ == '__main__':
     
 
     # start namenode process
-    #namenode_process = subprocess.Popen(['python3', namenode, argpath], stderr=stdout, stdout=NN_LOG_FILE)
+    namenode_process = subprocess.Popen(['python3', namenode, argpath], stderr=stdout)
     
     # log pid to tmp file so stop-all can terminate it.
-    #with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'a+') as f:
-    #    print(namenode_process.pid, file=f)
-
-    argpathD = os.path.join(HADOOP_HOME, 'tmp', 'datanode_arg.pickle')
-
-    #add path to datanode argpath
-    config['path_to_datanode_argpath']=argpathD
+    with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'w+') as f:
+       print(namenode_process.pid, file=f)
 
     numD = config['num_datanodes']
 
@@ -93,12 +78,8 @@ if __name__ == '__main__':
     pidD = []
 
     open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'w').close()
-    
-    for i in range(numD):
-        datanode_args = (i+1, ports[i], config['block_size'])
-        with open(argpathD, 'wb') as f:
-            pickle.dump(datanode_args, f)
-        datanode_process = subprocess.Popen(['python3', datanode, argpathD], stderr=stdout, stdout=DN_LOG_FILE)
-        pidD.append(datanode_process.pid)
-        with open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'a+') as f:
-            print(datanode_process.pid, file=f)
+
+    with open('start-datanodes.sh', 'w') as f:
+        for i in range(numD):
+            print('python3', datanode, i+1, ports[i], config['block_size'], '&', file=f)
+

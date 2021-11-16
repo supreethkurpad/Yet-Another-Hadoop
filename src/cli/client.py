@@ -79,7 +79,28 @@ class Client:
                         print("Incorrect number of parameters, enter file path and hdfs dir")
                         continue
                     self.partition()                         
-                #elif(parameters[0]=='ls'):
+
+                elif(parameters[0]=='mkdir'):
+                    if len(self.params)!=2:
+                        print('Incorrect number of parameters, enter name of one directory')
+                        continue
+                    res=self.post(5000, self.params[0], {'dpath':self.params[1]})
+                    print(res) 
+                
+                # Delete file or directory
+                elif(parameters[0]=='rm'): 
+                    if len(self.params)!=2:
+                        print('Incorrect number of parameters, enter name file or directory')
+                        continue
+                    res=self.post(5000, self.params[0], {'path':self.params[1]})
+                    print(res) 
+                
+                elif(paramters[0]=='rmdir'):
+                    if len(self.params)!=2:
+                        print('Incorrect number of parameters, enter name of one directory')
+                        continue
+                    res=self.post(5000, self.params[0], {'dpath':self.params[1]})
+                    print(res) 
 
                 elif(self.params[0]=='ls'):
                     if len(self.params)!=2:
