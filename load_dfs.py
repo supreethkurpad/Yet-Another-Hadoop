@@ -6,6 +6,7 @@ import os
 from sys import argv, stdout
 from functools import reduce 
 import pickle
+from contextlib import closing
 
 DEFAULT_PORT=5000
 NULL_FILE=os.devnull
@@ -14,18 +15,12 @@ HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/suvigya/PythonCode/Yet-Another
 def getPortNumbers(n) -> list:
     ports = []
     while n:
-        port = random.randint(1024, 65535)
-        location = ("127.0.0.1", port)
-        a_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        result_of_check = a_socket.connect_ex(location) 
-
-        if result_of_check == 0 and port not in ports and port!=DEFAULT_PORT:
-            n -= 1
-            ports.append(port)
-        else:
-            continue
-    
+        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as a_socket:
+            a_socket.bind(('', 0))
+            a_socket.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            ports.append(a_socket.getsockname()[1])
+            n-=1
+        
     return ports    
 
 if __name__ == '__main__':
@@ -83,9 +78,8 @@ if __name__ == '__main__':
     pidD = []
 
     open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'w').close()
-    print("Ports =", ports)
-    for i in range(numD):
-        datanode_process = subprocess.Popen(['python3', datanode, str(i+1)+" "+str(ports[i])+" "+str(config['block_size'])], stderr=stdout, stdout=stdout)
-        pidD.append(datanode_process.pid)
-        with open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'a+') as f:
-            print(datanode_process.pid, file=f)
+
+    with open('start-datanodes.sh', 'w') as f:
+        for i in range(numD):
+            print('python3', datanode, i+1, ports[i], config['block_size'], '&', file=f)
+

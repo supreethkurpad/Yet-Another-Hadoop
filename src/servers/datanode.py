@@ -15,7 +15,7 @@ class DataNode :
         self.initRequestHandler()
 
         # start the server listening for requests
-        self.server.run('127.0.0.1',port)
+        self.server.run(port = port)
     
     #dn -> {index}.bin -> data
     #read -> read from an index in {index}.bin
@@ -23,7 +23,7 @@ class DataNode :
     def initRequestHandler(self):
         
         @self.server.route('/write', methods=['POST'])
-        def write(self, index, data):
+        def write(index, data):
             index = request.get("index")
             data = request.get("data")
             index*=self.block_size
@@ -35,7 +35,7 @@ class DataNode :
             return jsonify(id = self.id, index = index)
 
         @self.server.route('/read/<index>')
-        def read(self, index):
+        def read(index):
             #return with data
             index = request.get(index)
             index*=self.block_size
@@ -46,15 +46,14 @@ class DataNode :
             
         
         @self.server.route('/')
-        def heartbeat(self):
+        def heartbeat():
             return jsonify(id = self.id, message="Awake")
 
 
 if __name__ == '__main__':
-    argpath = argv[1]
-    args = argpath.split(" ")
+    args = argv[1:]
     print("DataNode ", args)
     try:
         datanode = DataNode(int(args[0]), int(args[1]), int(args[2]))    
     except Exception as e:
-        print(f"Datanode {args[0]} crashed on port {args[1]}")
+        print(f"Datanode {args[0]} crashed on port {args[1]}", e)
