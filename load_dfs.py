@@ -92,6 +92,8 @@ if __name__ == '__main__':
     datanode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'datanode.py')
     pidD = []
 
+    open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'w').close()
+    
     for i in range(numD):
         datanode_args = (i+1, ports[i], config['block_size'])
         with open(argpathD, 'wb') as f:
