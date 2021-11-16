@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from datetime import datetime 
 from flask.logging import default_handler
 from sys import argv
+import pickle
 
 class DataNode :
     def __init__(self, id, port, block_size):
@@ -9,7 +10,6 @@ class DataNode :
         self.server = Flask(__name__)
         self.port = port 
         self.block_size = block_size
-        self.file = file
         self.id = id
         # defines routes 
         self.initRequestHandler()
@@ -22,13 +22,13 @@ class DataNode :
     #write -> write at an index in self.file
     def initRequestHandler(self):
         
-        @self.server.route('/write', method='POST')
+        @self.server.route('/write', methods=['POST'])
         def write(self, index, data):
             index = request.get("index")
             data = request.get("data")
             index*=self.block_size
 
-            with open(self.file, "ab+") as f:
+            with open("index.dat", "ab+") as f:
                 f.seek(index, 0)
                 f.write(data)
 
@@ -51,4 +51,8 @@ class DataNode :
 
 
 if __name__ == '__main__':
+    argpath = argv[1]
+    with open(argpath, 'rb') as f:
+        args = pickle.load(f)
+    datanode = DataNode(*args)
     pass
