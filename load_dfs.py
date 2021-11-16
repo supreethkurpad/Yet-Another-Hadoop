@@ -10,7 +10,7 @@ from contextlib import closing
 
 DEFAULT_PORT=5000
 NULL_FILE=os.devnull
-HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/suvigya/PythonCode/Yet-Another-Hadoop/')
+HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
 
 def getPortNumbers(n) -> list:
     ports = []
@@ -85,5 +85,8 @@ if __name__ == '__main__':
             datanode_process = subprocess.Popen(['python3', datanode, str(i+1), str(ports[i]), str(config['block_size'])], stderr=stdout)
             with open(pid_file, 'a') as f:
                 print(datanode_process.pid, file=f)
+    
+    with open(config_path,'w') as f:
+        json.dump(config,file=f)
     
     
