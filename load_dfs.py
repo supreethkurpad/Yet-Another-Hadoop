@@ -63,6 +63,7 @@ if __name__ == '__main__':
     #add path to argpath
     config['path_to_argpath']=argpath
     
+    
 
     # start namenode process
     namenode_process = subprocess.Popen(['python3', namenode, argpath], stderr=stdout)
@@ -82,11 +83,13 @@ if __name__ == '__main__':
 
     with open('start-datanodes.sh', 'w') as f:
         for i in range(numD):
+            pass
             datanode_process = subprocess.Popen(['python3', datanode, str(i+1), str(ports[i]), str(config['block_size'])], stderr=stdout)
             with open(pid_file, 'a') as f:
                 print(datanode_process.pid, file=f)
-    
-    with open(config_path,'w') as f:
-        json.dump(config,file=f)
+  
+    with open(config_path,'w+') as f:
+        json.dump(config, f)
+
     
     

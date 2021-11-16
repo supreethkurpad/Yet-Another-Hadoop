@@ -17,7 +17,7 @@ class Client:
     def post(self,port,cmd,data):
         if((requests.head('http://localhost:'+str(port))).status_code==200):
             try:
-                res=requests.post('http://localhost:'+str(port)+'/'+cmd,data=json.dumps(data)) 
+                res=requests.post('http://localhost:'+str(port)+'/'+str(cmd),data=json.dumps(data)) 
                 return res
             except:
                     print("no node found in port")
@@ -36,27 +36,28 @@ class Client:
             chunk = f.read(self.config['block_size'])
             while chunk:
                 self.chunks=chunk
-                self.sendRequest()
+                self.sendputRequest()
                 chunk = f.read(self.config['block_size'])
 
     def sendputRequest(self):
         res=None
         res=self.post(5000,self.params[0],{"fpath":self.params[1]}) #see of this json way of passing param is needed
                         
-        if(res==None):
+        if(res.data()==None):
             print("no ports running, try again")
             return
+        print("got from namenode")
         #recieves dict of datanode:index
-        final_res=self.post(self.ports[res[0]-1],self.params[0],{"data":self.chunks,"nodes":res,"rep_cnt":self.config['replication_factor'],\
+        final_res=self.post(self.ports[res[0]-1],'write',{"data":self.chunks,"nodes":res,"rep_cnt":self.config['replication_factor'],\
                             "ports":self.ports})
-        if(final_res==None):
+        if(final_res.data()==None):
             print("failed to insert file")
 
     #res={1:[2,3],23:[1,2]}
     def getfileblocks(self,res):
         for i in res:
             for p in res[i]:
-                data=self.post(self.ports[i[p-1]],self.params[1],{"file_index":i})
+                data=self.post(self.ports[i[p-1]],'read',{"file_index":i})
                 if(data is None):
                     print("datanode down")
                 else:
@@ -80,27 +81,28 @@ class Client:
                         continue
                     self.partition()                         
 
-                elif(parameters[0]=='mkdir'):
+                elif(self.params[0]=='mkdir'):
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name of one directory')
                         continue
                     res=self.post(5000, self.params[0], {'dpath':self.params[1]})
-                    print(res) 
+                    print(res.text) 
                 
                 # Delete file or directory
-                elif(parameters[0]=='rm'): 
+                elif(self.params[0]=='rm'): 
+                    print(self.params[0])
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name file or directory')
                         continue
                     res=self.post(5000, self.params[0], {'path':self.params[1]})
-                    print(res) 
+                    print(res.text) 
                 
-                elif(paramters[0]=='rmdir'):
+                elif(self.params[0]=='rmdir'):
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name of one directory')
                         continue
                     res=self.post(5000, self.params[0], {'dpath':self.params[1]})
-                    print(res) 
+                    print(res.text) 
 
                 elif(self.params[0]=='ls'):
                     if len(self.params)!=2:
@@ -111,8 +113,8 @@ class Client:
                     if (res== None):
                         print("Directory doesnt exist in hdfs")
                         return
+                    print("files are:")
                     for i in res:
-                        print("files are:")
                         print(res)
                 elif(self.params[0]=='cat'):
                     if len(self.params)!=2:

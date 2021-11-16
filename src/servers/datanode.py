@@ -24,7 +24,7 @@ class DataNode :
         self.server.run(port = port)
     
     def readConfig(self):
-        with open(os.path.join(self.HADOOP_HOME, 'configs', 'dfs_setup_config.json'), 'w') as f:
+        with open(os.path.join(self.HADOOP_HOME, 'configs', 'dfs_setup_config.json'), 'r') as f:
             self.config = json.load(f) 
 
     def initRequestHandler(self):

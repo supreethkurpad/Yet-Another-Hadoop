@@ -1,10 +1,11 @@
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from datetime import datetime 
 import json
 from flask.logging import default_handler
 import os
 from sys import argv
 import pickle
+
 
 class NameNode :
     def __init__(self, port, dn_ports=[], path_to_config=None, primary=True):
@@ -34,31 +35,49 @@ class NameNode :
         pass
 
     def initRequestHandler(self):
-        @self.server.route('/put/<file>/<path>')
-        def put(file, path_in_fs):
+        @self.server.route('/put',methods=['POST'])
+        def put():
             """
             client -put myfile.txt user/input/
             """
+            req_data=request.json
+            #req_data={"fpath":"path/to/file"}
+            #return {1:56} # dict key- datanodes val- file index
+            return {}
+
+        @self.server.route('/cat',methods=['POST'])
+        def cat():
+            req_data=request.json
+            #req_data={"fpath":"path/to/file"}
+            #return dict of dict {1:{1:22,2:3},2:{3:23,1:65}} key1- block#, key2 - nth block's datanode, val- index in that datanode
+            return {}
+
+        @self.server.route('/rmdir',methods=['POST'])
+        def rmdir():
+            req_data=request.json
+            #req_data={"dpath":"path/to/file"}
+            return "dir deleted successfully"
             pass
 
-        @self.server.route('/cat/<path>')
-        def cat(path_in_fs):
-            pass
-
-        @self.server.route('/rmdir/<path>')
-        def rmdir(path_in_fs):
-            pass
-
-        @self.server.route('/mkdir/<path>')
-        def mkdir(path_in_fs):
+        @self.server.route('/mkdir',methods=['POST'])
+        def mkdir():
+            req_data=request.json
+            #req_data={"dpath":"path/to/dir"}
+            return "Folder created successfully"
             pass
         
-        @self.server.route('/ls/<path>')
-        def ls(path_in_fs):
-            pass
+        @self.server.route('/ls',methods=['POST'])
+        def ls():
+            req_data=request.json
+            #req_data={"dpath":"path/to/dir"}
+            #return ['/test.txt','test2.txt'] list of files under dir
+            return[]
         
-        @self.server.route('/rm/<path>')
-        def rm(path_in_fs):
+        @self.server.route('/rm',methods=['POST'])
+        def rm():
+            req_data=request.json
+            #req_data={"path":"path/to/file"}
+            return "File/folder deleted successfully"
             pass
         
         @self.server.route('/')
