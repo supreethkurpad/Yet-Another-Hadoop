@@ -17,9 +17,9 @@ class DataNode :
         # start the server listening for requests
         self.server.run('127.0.0.1',port)
     
-    #dn -> self.file -> data
-    #read -> read from an index in self.file
-    #write -> write at an index in self.file
+    #dn -> {index}.bin -> data
+    #read -> read from an index in {index}.bin
+    #write -> write at an index in {index}.bin
     def initRequestHandler(self):
         
         @self.server.route('/write', methods=['POST'])
@@ -28,7 +28,7 @@ class DataNode :
             data = request.get("data")
             index*=self.block_size
 
-            with open("index.dat", "ab+") as f:
+            with open(f"{index}.bin", "ab+") as f:
                 f.seek(index, 0)
                 f.write(data)
 
@@ -39,7 +39,7 @@ class DataNode :
             #return with data
             index = request.get(index)
             index*=self.block_size
-            with open(self.file, "rb") as f:
+            with open("{index}.bin", "rb") as f:
                 f.seek(index, 0)
                 data = f.read(self.block_size)
                 return jsonify(id = self.id, index = index, data=data)
@@ -52,7 +52,9 @@ class DataNode :
 
 if __name__ == '__main__':
     argpath = argv[1]
-    with open(argpath, 'rb') as f:
-        args = pickle.load(f)
-    datanode = DataNode(*args)
-    pass
+    args = argpath.split(" ")
+    print("DataNode ", args)
+    try:
+        datanode = DataNode(int(args[0]), int(args[1]), int(args[2]))    
+    except Exception as e:
+        print(f"Datanode {args[0]} crashed on port {args[1]}")

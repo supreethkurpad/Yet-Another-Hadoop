@@ -14,7 +14,7 @@ class NameNode :
         self.primary = primary
         self.server.logger.removeHandler(default_handler)
         self.datanodes = dn_ports
-        
+        print("NameNode ", port)
         # defines routes 
         self.initRequestHandler()
 
