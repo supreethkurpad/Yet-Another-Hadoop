@@ -89,7 +89,7 @@ if __name__ == '__main__':
     numD = config['num_datanodes']
 
         
-    datanode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'datanode.py')<<<<<<< HEAD
+    datanode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'datanode.py')
     pidD = []
 
     for i in range(numD):
