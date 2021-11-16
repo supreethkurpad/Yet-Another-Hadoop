@@ -83,3 +83,5 @@ if __name__ == '__main__':
         for i in range(numD):
             print('python3', datanode, i+1, ports[i], config['block_size'], '&', file=f)
 
+    start_sh = os.path.join(HADOOP_HOME, 'start-datanodes.sh')
+    subprocess.Popen(["sh", start_sh])
