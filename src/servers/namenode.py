@@ -4,6 +4,7 @@ import json
 from flask.logging import default_handler
 import os
 from sys import argv
+import pickle
 
 class NameNode :
     def __init__(self, port, dn_ports=[], path_to_config=None, primary=True):
@@ -73,5 +74,7 @@ class NameNode :
 
 if __name__ == "__main__":
     # TODO unpickle args and pass them
-    args = argv[1:]
+    argpath = argv[1]
+    with open(argpath, 'rb') as f:
+        args = pickle.load(f)
     namenode = NameNode(*args)
