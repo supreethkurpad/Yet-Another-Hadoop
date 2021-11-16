@@ -2,6 +2,8 @@ import os
 import requests
 import sys
 import json
+import urllib.request
+
 HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
 
 
@@ -13,11 +15,13 @@ class Client:
         self.chunks=None
 
     def post(self,port,cmd,data):
-        try:
-            res=requests.post('http://localhost:'+str(port)+'/'+cmd,data=json.dumps(data)) 
-            return res
-        except:
-                print("no node found in port")
+        if((requests.head('http://localhost:'+str(port))).status_code==200):
+            try:
+                res=requests.post('http://localhost:'+str(port)+'/'+cmd,data=json.dumps(data)) 
+                return res
+            except:
+                    print("no node found in port")
+        return None
 
     def partition(self):
         if(self.params is None):
@@ -45,8 +49,20 @@ class Client:
         #recieves dict of datanode:index
         final_res=self.post(self.ports[res[0]-1],self.params[0],{"data":self.chunks,"nodes":res,"rep_cnt":self.config['replication_factor'],\
                             "ports":self.ports})
+        if(final_res==None):
+            print("failed to insert file")
 
-
+    #res={1:[2,3],23:[1,2]}
+    def getfileblocks(self,res):
+        for i in res:
+            for p in res[i]:
+                data=self.post(self.ports[i[p-1]],self.params[1],{"file_index":i})
+                if(data is None):
+                    print("datanode down")
+                else:
+                    print(int(data,2))
+                    break
+            
 
     
 
@@ -64,6 +80,31 @@ class Client:
                         continue
                     self.partition()                         
                 #elif(parameters[0]=='ls'):
+
+                elif(self.params[0]=='ls'):
+                    if len(self.params)!=2:
+                        print("enter command correctly")
+                        continue
+                    res=None
+                    res=self.post(5000,self.params[0],{"fpath":self.params[1]})
+                    if (res== None):
+                        print("Directory doesnt exist in hdfs")
+                        return
+                    for i in res:
+                        print("files are:")
+                        print(res)
+                elif(self.params[0]=='cat'):
+                    if len(self.params)!=2:
+                        print("enter command correctly")
+                        continue
+                    res=self.post(5000,self.params[0],{"fpath":self.params[1]})
+                    if(res==None):
+                        print("file not found in hdfs")
+                    #expects response as {fileblock:datanode}
+                    self.getfileblocks(res)
+
+                    
+                    
 
             except Exception as e:
                 print(e)
