@@ -4,7 +4,7 @@ from flask.logging import default_handler
 from sys import argv
 
 class DataNode :
-    def __init__(self, id, port, file, block_size):
+    def __init__(self, id, port, block_size):
         # init 
         self.server = Flask(__name__)
         self.port = port 
@@ -48,3 +48,7 @@ class DataNode :
         @self.server.route('/')
         def heartbeat(self):
             return jsonify(id = self.id, message="Awake")
+
+
+if __name__ == '__main__':
+    pass

@@ -71,11 +71,16 @@ if __name__ == '__main__':
     # argpath for datanode not given
     argpathD = os.path.join(HADOOP_HOME, 'tmp', 'datanode_arg.pickle')
     numD = config['num_datanodes']
+
+        
     datanode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'datanode.py')
-    pidD = list()
-    while numD:
+    pidD = []
+
+    for i in range(numD):
+        datanode_args = (i+1, ports[i], config['block_size'])
+        with open(argpath, 'w') as f:
+            pickle.dump(datanode_args, f)
         datanode_process = subprocess.Popen(['python', datanode, argpathD], stderr=stdout, stdout=DN_LOG_FILE)
         pidD.append(datanode_process.pid)
         with open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'a+') as f:
             print(datanode_process.pid, file=f)
-        numD -= 1
