@@ -12,12 +12,12 @@ class Client:
         self.params=None
         self.chunks=None
 
-    def post(self,port,params):
+    def post(self,port,cmd,data):
         try:
-            res=requests.post('http://localhost:'+str(port)+'/put',data=json.dumps(params)) 
+            res=requests.post('http://localhost:'+str(port)+'/'+cmd,data=json.dumps(data)) 
             return res
         except:
-                print("no datanode found in port")
+                print("no node found in port")
 
     def partition(self):
         if(self.params is None):
@@ -35,15 +35,15 @@ class Client:
                 self.sendRequest()
                 chunk = f.read(self.config['block_size'])
 
-    def sendRequest(self):
+    def sendputRequest(self):
         res=None
-        res=self.post(5000,{"fpath":self.params[1]}) #see of this json way of passing param is needed
+        res=self.post(5000,self.params[0],{"fpath":self.params[1]}) #see of this json way of passing param is needed
                         
         if(res==None):
             print("no ports running, try again")
             return
         #recieves dict of datanode:index
-        final_res=self.post(self.ports[res[0]-1],{"data":self.chunks,"nodes":res,"rep_cnt":self.config['replication_factor'],\
+        final_res=self.post(self.ports[res[0]-1],self.params[0],{"data":self.chunks,"nodes":res,"rep_cnt":self.config['replication_factor'],\
                             "ports":self.ports})
 
 
