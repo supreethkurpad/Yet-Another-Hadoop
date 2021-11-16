@@ -32,7 +32,7 @@ if __name__ == '__main__':
     
 
     if len(argv) < 2:
-        print("Incorerct usage.Expected python start-all.py /path/to/dfs_setup_config ")
+        print("Incorerct usage.Expected python3 start-all.py /path/to/dfs_setup_config ")
         exit(1)
     config_path = argv[1]
     
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     
 
     # start namenode process
-    #namenode_process = subprocess.Popen(['python', namenode, argpath], stderr=stdout, stdout=NN_LOG_FILE)
+    #namenode_process = subprocess.Popen(['python3', namenode, argpath], stderr=stdout, stdout=NN_LOG_FILE)
     
     # log pid to tmp file so stop-all can terminate it.
     #with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'a+') as f:
@@ -94,9 +94,9 @@ if __name__ == '__main__':
 
     for i in range(numD):
         datanode_args = (i+1, ports[i], config['block_size'])
-        with open(argpath, 'w') as f:
+        with open(argpathD, 'wb') as f:
             pickle.dump(datanode_args, f)
-        datanode_process = subprocess.Popen(['python', datanode, argpathD], stderr=stdout, stdout=DN_LOG_FILE)
+        datanode_process = subprocess.Popen(['python3', datanode, argpathD], stderr=stdout, stdout=DN_LOG_FILE)
         pidD.append(datanode_process.pid)
         with open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'a+') as f:
             print(datanode_process.pid, file=f)
