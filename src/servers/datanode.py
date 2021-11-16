@@ -3,6 +3,8 @@ from datetime import datetime
 from flask.logging import default_handler
 from sys import argv
 import pickle
+import os
+import json
 
 class DataNode :
     def __init__(self, id, port, block_size):
@@ -11,25 +13,30 @@ class DataNode :
         self.port = port 
         self.block_size = block_size
         self.id = id
+        self.HADOOP_HOME = os.environ['MYHADOOP_HOME']
         # defines routes 
+        self.readConfig()
+        self.data_dir = os.path.join(self.config['path_to_datanodes'], f"datanode_{self.id}")
+
         self.initRequestHandler()
 
         # start the server listening for requests
         self.server.run(port = port)
     
-    #dn -> {index}.bin -> data
-    #read -> read from an index in {index}.bin
-    #write -> write at an index in {index}.bin
+    def readConfig(self):
+        with open(os.path.join(self.HADOOP_HOME, 'configs', 'dfs_setup_config.json'), 'w') as f:
+            self.config = json.load(f) 
+
     def initRequestHandler(self):
         
         @self.server.route('/write', methods=['POST'])
-        def write(index, data):
-            index = request.get("index")
-            data = request.get("data")
-            index*=self.block_size
+        def write():
+            rs = request.json
+            index = rs.get("index")
+            data = rs.get("data").encode('utf-8')
+
 
             with open(f"{index}.bin", "ab+") as f:
-                f.seek(index, 0)
                 f.write(data)
 
             return jsonify(id = self.id, index = index)
@@ -37,11 +44,8 @@ class DataNode :
         @self.server.route('/read/<index>')
         def read(index):
             #return with data
-            index = request.get(index)
-            index*=self.block_size
             with open("{index}.bin", "rb") as f:
-                f.seek(index, 0)
-                data = f.read(self.block_size)
+                data = f.read(index)
                 return jsonify(id = self.id, index = index, data=data)
             
         
