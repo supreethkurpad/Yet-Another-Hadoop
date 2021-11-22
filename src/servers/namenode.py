@@ -180,6 +180,9 @@ class NameNode :
             """
             req_data=request.json
             fspath = req_data.get('fspath')
+            if not fspath.startswith(self.config['fs_path']):
+                fspath = os.path.join(self.config['fs_path'], fspath)
+
             fspath = os.path.join(self.path, fspath)
             if not os.path.exists(fspath):
                 return {
@@ -198,17 +201,57 @@ class NameNode :
 
         @self.server.route('/rmdir',methods=['POST'])
         def rmdir():
+            """
+            yah> rmdir fspath
+            """
             req_data=request.json
-            #req_data={"dpath":"path/to/file"}
-            return "dir deleted successfully"
-            pass
+            fspath = req_data.get('fspath')
+            if not fspath.startswith(self.config['fs_path']):
+                fspath = os.path.join(self.config['fs_path'], fspath)
+
+            try:
+                acutal_path = os.path.join(self.path, fspath)
+                os.rmdir(acutal_path)
+            except:
+                return {
+                    "error":"Could not delete directory. Check the path and also make sure it is empty",
+                    "code":"1"
+                }
+
+            return {
+                "code":"0",
+                "msg":"deleted directory"
+            }
 
         @self.server.route('/mkdir',methods=['POST'])
         def mkdir():
+            """
+            yah> mkdir fspath
+            """
             req_data=request.json
-            #req_data={"dpath":"path/to/dir"}
-            return "Folder created successfully"
-            pass
+            fspath = req_data.get('fspath')
+            if not fspath.startswith(self.config['fs_path']):
+                fspath = os.path.join(self.config['fs_path'], fspath)
+            
+            if os.path.exists(fspath):
+                return {
+                    "error":"directory already exists",
+                    "code":"1"
+                }
+
+            try:
+                acutal_path = os.path.join(self.path, fspath)
+                os.mkdir(acutal_path)
+            except:
+                return {
+                    "error":"Invalid path to directory",
+                    "code":"1"
+                }
+
+            return {
+                "code":"0",
+                "msg":"created directory"
+            }
         
         @self.server.route('/ls',methods=['POST'])
         def ls():

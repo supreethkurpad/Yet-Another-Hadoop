@@ -101,7 +101,7 @@ class Client:
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name of one directory')
                         continue
-                    res=self.post(5000, self.params[0], {'dpath':self.params[1]})
+                    res=self.post(5000, self.params[0], {'fspath':self.params[1]})
                     print(res.text) 
                 
                 # Delete file or directory
@@ -117,7 +117,7 @@ class Client:
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name of one directory')
                         continue
-                    res=self.post(5000, self.params[0], {'dpath':self.params[1]})
+                    res=self.post(5000, self.params[0], {'fspath':self.params[1]})
                     print(res.text) 
 
                 elif(self.params[0]=='ls'):
@@ -153,26 +153,29 @@ class Client:
         
 
 if __name__ == '__main__':
+    try:
+        if len(sys.argv) < 2:
+            config_path = os.path.join(HADOOP_HOME, 'configs', 'dfs_setup_config.json')
+            print("Using default config...")
+        else:
+            config_path = sys.argv[1]
+        
+        if not (os.path.exists(config_path)):
+            print("path to config does not exist")
+            exit(1)
 
-    if len(sys.argv) < 2:
-        config_path = os.path.join(HADOOP_HOME, 'configs', 'dfs_setup_config.json')
-        print("Using default config...")
-    else:
-        config_path = sys.argv[1]
-    
-    if not (os.path.exists(config_path)):
-        print("path to config does not exist")
-        exit(1)
+        #get configs
+        config = {}
+        with open(config_path, 'r') as f:
+            config = json.load(f)
 
-    #get configs
-    config = {}
-    with open(config_path, 'r') as f:
-        config = json.load(f)
+        #get ports
+        with open(config['path_to_ports'],'r') as f:
+            ports=f.read().splitlines()
 
-    #get ports
-    with open(config['path_to_ports'],'r') as f:
-        ports=f.read().splitlines()
+        new_client = Client(config,ports)
+        new_client.startReqHandler()
 
-    new_client = Client(config,ports)
-    new_client.startReqHandler()
+    except KeyboardInterrupt:
+        exit(0)
                 
