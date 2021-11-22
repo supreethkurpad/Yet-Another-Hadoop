@@ -42,11 +42,21 @@ class NameNode :
         # start the server listening for requests
         self.server.run('127.0.0.1',port)
 
-    def readDataNodeStates():
+    def readDataNodeStates(self):
         """
-        get all details about datanode such as size, available space, status, etc
+        get all details about datanode such as size, available space, etc (status:0)
         """
-        pass        
+        states = []
+        datanode_path = self.config['path_to_datanodes']
+        datanode_size = self.config['datanode_size']
+        block_size = self.config['block_size']
+        for i in range(len(os.listdir(datanode_path))):
+            data_dir = os.path.join((datanode_path, f"datanode_{i}"))
+            free_blocks = datanode_size - sum(os.path.getsize(f) for f in os.path.join((data_dir, os.listdir(data_dir))))
+            newState = DataNodeState(self.datanodes[i], block_size, free_blocks, status=0)
+            states.append(newState)
+        print(states)    
+        return states
 
     def initHeartBeats(self):
         pass
