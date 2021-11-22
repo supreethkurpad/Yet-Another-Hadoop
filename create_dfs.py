@@ -36,7 +36,7 @@ def checkNameNode(config):
         print("Path to setup config file invalid")
 
     if not (os.path.exists(config['namenode_log_path'])):
-        print("Invalid directory to namenode logs, does not exist")
+        os.mkdir(config['namenode_log_path'])
         
 def checkDataNodes(config):
     """
@@ -67,7 +67,7 @@ def checkDataNodes(config):
         print("Path to setup config file does not exist")
 
     if not (os.path.exists(config['datanode_log_path'])):
-        print("Invalid directory to datanode logs, does not exist")
+        os.mkdir(config['datanode_log_path'])
 
     if not os.path.exists(path_to_datanodes):
         print("Invalid directory for datanodes. Does not exist")

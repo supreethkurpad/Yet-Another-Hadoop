@@ -6,6 +6,7 @@ import os
 from sys import argv
 import pickle
 from state import DataNodeState
+from random import choice, sample
 
 """
 Status codes:
@@ -55,7 +56,7 @@ class NameNode :
         for i in range(len(self.datanodes)):
             data_dir = os.path.join(datanode_path, f"datanode{i+1}")
             free_blocks = datanode_size - sum(os.path.getsize(os.path.join(data_dir,f)) for f in os.listdir(data_dir))
-            newState = DataNodeState(self.datanodes[i], block_size, free_blocks, status=0)
+            newState = DataNodeState(i+1, self.datanodes[i], block_size, free_blocks, status=0)
             states.append(newState)
         print(states)    
         return states
@@ -63,12 +64,16 @@ class NameNode :
     def initHeartBeats(self):
         pass
     
-    def getBlocks(num_blocks, r):
+    def getBlocks(self, num_blocks, r):
         """
         Find r datanodes which are not full. 
         Pick an available index from each and return list of (id,index)
         Repeat process num_blocks times.
         """
+        available_dn = self.datanode_states
+        for block in range(num_blocks):
+            for i in range(r):
+                free_dn = choice(available_dn)
 
         pass
 
@@ -102,8 +107,6 @@ class NameNode :
             if not fspath.startswith(self.config['fs_path']):
                 fspath = os.path.join(self.config["fs_path"], fspath)
             
-            filename = os.path.basename(filepath)
-
             fspath = os.path.join(self.path, fspath)
             
             if not os.path.exists(os.path.dirname(fspath)):
@@ -189,8 +192,6 @@ class NameNode :
                 # TODO
                 pass
 
-    def checkPathExists(self, path_in_fs):
-        pass
 
 if __name__ == "__main__":
 
