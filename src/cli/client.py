@@ -3,6 +3,7 @@ import requests
 import sys
 import json
 import urllib.request
+import math
 
 HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
 
@@ -12,46 +13,60 @@ class Client:
         self.config=config
         self.ports=ports
         self.params=None
-        self.chunks=None
 
     def post(self,port,cmd,data):
         if((requests.head('http://localhost:'+str(port))).status_code==200):
             try:
-                res=requests.post('http://localhost:'+str(port)+'/'+str(cmd),data=json.dumps(data)) 
+                print("post function")
+                print(data)
+                res=requests.post('http://localhost:'+str(port)+'/'+str(cmd),json=data) 
                 return res
             except:
                     print("no node found in port")
         return None
 
-    def partition(self):
+    def partition(self,metadata):
+        
+        with open(self.params[1], 'rb') as f:
+            dnodes=metadata.split('\n')
+
+            for dn in dnodes:
+
+                dnode_dict = dict(map(lambda x: x.split(','), dn.split(' ')))
+                chunk = f.read(self.config['block_size'])
+                req_data={'data': chunk}
+                dns = list(dnode_dict.keys())
+                
+                for i in range(self.config['replication_factor']):
+                    req_data[self.ports[dns[i]-1]] = dnode_dict[dns[i]]
+
+                final_res=self.post(self.ports[dns[0]-1],'write',req_data)
+        
+
+    def sendputRequest(self):
+        res=None
         if(self.params is None):
             print("Enter file path")
             return
-        print(self.params[1])
         if not os.path.exists(self.params[1]):
             print("File does not exist in path specified")
             return
 
-        with open(self.params[1], 'rb') as f:
-            chunk = f.read(self.config['block_size'])
-            while chunk:
-                self.chunks=chunk
-                self.sendputRequest()
-                chunk = f.read(self.config['block_size'])
+        file_size = os.path.getsize(self.params[1])
+        #data=
+        res = self.post(5000,self.params[0],{"filepath":self.params[1],"path_in_fs":self.params[2],\
+            "size":math.ceil(file_size/self.config['block_size'])}) 
+        print(res.text)
+        #if(res['code']!=0):
+          #  print("Error occured with status and description ",res['code']," - ",res['error'])
+          #  return
+        #print("got from namenode")
+        #recieves file
+        print("naemnode works")
+        #final_res =self.partition(res['data'])
 
-    def sendputRequest(self):
-        res=None
-        res=self.post(5000,self.params[0],{"fpath":self.params[1]}) #see of this json way of passing param is needed
-                        
-        if(res.data()==None):
-            print("no ports running, try again")
-            return
-        print("got from namenode")
-        #recieves dict of datanode:index
-        final_res=self.post(self.ports[res[0]-1],'write',{"data":self.chunks,"nodes":res,"rep_cnt":self.config['replication_factor'],\
-                            "ports":self.ports})
-        if(final_res.data()==None):
-            print("failed to insert file")
+        #if(final_res.data()==None):
+        #    print("failed to insert file")
 
     #res={1:[2,3],23:[1,2]}
     def getfileblocks(self,res):
@@ -79,7 +94,8 @@ class Client:
                     if len(self.params)!=3:
                         print("Incorrect number of parameters, enter file path and hdfs dir")
                         continue
-                    self.partition()                         
+                    self.sendputRequest()
+                    
 
                 elif(self.params[0]=='mkdir'):
                     if len(self.params)!=2:
@@ -123,7 +139,7 @@ class Client:
                     res=self.post(5000,self.params[0],{"fpath":self.params[1]})
                     if(res==None):
                         print("file not found in hdfs")
-                    #expects response as {fileblock:datanode}
+                    #expects response as file
                     self.getfileblocks(res)
 
                     
