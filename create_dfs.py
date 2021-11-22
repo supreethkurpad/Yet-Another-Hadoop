@@ -58,13 +58,11 @@ def checkDataNodes(config):
     else:
         print("number of datanodes not valid")
 
-    if(os.path.exists(config['dfs_setup_config'])):
-        with open(config['dfs_setup_config'], 'w+') as f:
-            dfs_config = config.copy()
-            dfs_config['path_to_each_datanode'] = list_of_datanode_paths
-            json.dump(dfs_config, f)
-    else:
-        print("Path to setup config file does not exist")
+    with open(config['dfs_setup_config'], 'w+') as f:
+        dfs_config = config.copy()
+        dfs_config['path_to_each_datanode'] = list_of_datanode_paths
+        json.dump(dfs_config, f)
+
 
     if not (os.path.exists(config['datanode_log_path'])):
         os.mkdir(config['datanode_log_path'])
