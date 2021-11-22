@@ -1,0 +1,10 @@
+POST http://127.0.0.1:2000/write HTTP/1.1
+Content-Type: application/json
+
+{
+    "data":"Hello World",
+    "2000":"1",
+    "3000":"2",
+    "4000":"3",
+    "5000":"4"
+}
