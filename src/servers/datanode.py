@@ -57,8 +57,8 @@ class DataNode :
         def read(index):
             #return with data
             with open(os.path.join(self.data_dir, f"{index}.bin"), "rb") as f:
-                data = f.read(index)
-                return jsonify(id = self.id, index = index, data=data)
+                data = f.read()
+                return jsonify(id = self.id, index = index, data=data.decode())
             
         
         @self.server.route('/')

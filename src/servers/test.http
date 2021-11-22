@@ -1,8 +1,1 @@
-POST http://127.0.0.1:5000/put HTTP/1.1
-Content-Type: application/json
-
-{
-    "filepath": "/mnt/c/Users/supre/BD/test.txt",
-    "path_in_fs": "user/a.txt",
-    "size": "1"
-}
+GET http://127.0.0.1:3000/read/1 HTTP/1.1
