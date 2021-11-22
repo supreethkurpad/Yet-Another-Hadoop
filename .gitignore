@@ -2,3 +2,4 @@ configs/*
 hadoop_env/
 configs/
 __pycache__/
+tmp/
