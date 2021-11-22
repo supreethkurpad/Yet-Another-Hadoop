@@ -14,8 +14,8 @@ def checkNameNode(config):
     if not (os.path.exists(config['path_to_namenodes'])):
         print("Invalid directory for path to namenodes, does not exist")
 
-    p_namenode = os.path.join(config['path_to_namenodes'], 'primary')
-    s_namenode = os.path.join(config['path_to_namenodes'], 'secondary')
+    p_namenode = os.path.join(config['path_to_namenodes'], 'namenode1')
+    s_namenode = os.path.join(config['path_to_namenodes'], 'namenode2')
     try:
         os.mkdir(p_namenode)
         os.mkdir(s_namenode)
