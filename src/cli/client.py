@@ -17,30 +17,37 @@ class Client:
     def post(self,port,cmd,data):
         if((requests.head('http://localhost:'+str(port))).status_code==200):
             try:
-                print("post function")
                 print(data)
+                print(port)
                 res=requests.post('http://localhost:'+str(port)+'/'+str(cmd),json=data) 
+                print("done")
                 return res
-            except:
-                    print("no node found in port")
+            except Exception as e:
+                    print("exception")
+                    print(e)
         return None
 
     def partition(self,metadata):
         
         with open(self.params[1], 'rb') as f:
+            
             dnodes=metadata.split('\n')
-
+            print(dnodes)
+            print("partition")
             for dn in dnodes:
+                dn=dn.rstrip()
+                if(dn!=""):
+                    dnode_dict = dict(map(lambda x: x.split(','), dn.split(' ')))
+                    chunk = f.read(self.config['block_size'])
+                    req_data={'data': chunk.decode('utf-8')}
+                    dns = list(dnode_dict.keys())
+                    print(dns)
+                    for i in range(self.config['replication_factor']):
+                        req_data[self.ports[int(dns[i])-1]] = dnode_dict[dns[i]]
 
-                dnode_dict = dict(map(lambda x: x.split(','), dn.split(' ')))
-                chunk = f.read(self.config['block_size'])
-                req_data={'data': chunk}
-                dns = list(dnode_dict.keys())
-                
-                for i in range(self.config['replication_factor']):
-                    req_data[self.ports[dns[i]-1]] = dnode_dict[dns[i]]
-
-                final_res=self.post(self.ports[dns[0]-1],'write',req_data)
+                    final_res=self.post(self.ports[int(dns[0])-1],'write',req_data)
+                    print("done")
+                    return final_res
         
 
     def sendputRequest(self):
@@ -56,28 +63,40 @@ class Client:
         #data=
         res = self.post(5000,self.params[0],{"filepath":self.params[1],"path_in_fs":self.params[2],\
             "size":math.ceil(file_size/self.config['block_size'])}) 
-        print(res.text)
-        #if(res['code']!=0):
-          #  print("Error occured with status and description ",res['code']," - ",res['error'])
-          #  return
-        #print("got from namenode")
+        res=res.json()
+        if(res['code']!='0'):
+            print("Error occured with status and description ",res['code']," - ",res['error'])
+            return
         #recieves file
         print("naemnode works")
-        #final_res =self.partition(res['data'])
+        final_res =self.partition(res['data'])
 
-        #if(final_res.data()==None):
-        #    print("failed to insert file")
+        if(final_res==None):
+            print("failed to insert file")
 
     #res={1:[2,3],23:[1,2]}
     def getfileblocks(self,res):
-        for i in res:
-            for p in res[i]:
-                data=self.post(self.ports[i[p-1]],'read',{"file_index":i})
-                if(data is None):
-                    print("datanode down")
-                else:
-                    print(int(data,2))
-                    break
+        res=res.json()
+        if(res['code']!='0'):
+            print("Error occured with status and description ",res['code']," - ",res['error'])
+            return
+        print(res)
+        dnodes=res['data'].split('\n')
+        print(dnodes)
+        for dn in dnodes:
+            dn=dn.rstrip()
+            print(dn)
+            if(dn!=""):
+                dnode_dict = dict(map(lambda x: x.split(','), dn.split(' ')))
+                for p in dnode_dict.keys():
+                    data=requests.get('http://localhost:'+str(self.ports[int(p)-1]),'read',dnode_dict[p])
+                    d=data.json()
+                    if(data is None):
+                        print("datanode down")
+                    else:
+                        print(d['data'])
+                        break
+
             
 
     
@@ -136,7 +155,7 @@ class Client:
                     if len(self.params)!=2:
                         print("enter command correctly")
                         continue
-                    res=self.post(5000,self.params[0],{"fpath":self.params[1]})
+                    res=self.post(5000,self.params[0],{"fspath":self.params[1]})
                     if(res==None):
                         print("file not found in hdfs")
                     #expects response as file
