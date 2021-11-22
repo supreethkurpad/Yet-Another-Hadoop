@@ -6,6 +6,8 @@ import pickle
 import os
 import json
 
+import requests
+
 class DataNode :
     def __init__(self, id, port, block_size):
         # init 
@@ -16,7 +18,7 @@ class DataNode :
         self.HADOOP_HOME = os.environ['MYHADOOP_HOME']
         # defines routes 
         self.readConfig()
-        self.data_dir = os.path.join(self.config['path_to_datanodes'], f"datanode_{self.id}")
+        self.data_dir = os.path.join(self.config['path_to_datanodes'], f"datanode{self.id}")
 
         self.initRequestHandler()
 
@@ -31,20 +33,30 @@ class DataNode :
         
         @self.server.route('/write', methods=['POST'])
         def write():
-            rs = request.json
-            index = rs.get("index")
-            data = rs.get("data").encode('utf-8')
+            js = request.json
+            port = str(self.port)
 
+            data = js["data"].encode('utf-8')
+            index = js[port]
 
-            with open(f"{index}.bin", "ab+") as f:
+            with open(os.path.join(self.data_dir, f"{index}.bin"), "ab+") as f:
                 f.write(data)
 
+            del js[port]
+
+            remaining_datanodes = list(js.keys() - {'data'})
+            
+            if(len(remaining_datanodes) != 0):
+                next_port = remaining_datanodes[0]
+                url = f"http://localhost:{next_port}/write"
+                res = requests.post(url, json=js)
+        
             return jsonify(id = self.id, index = index)
 
         @self.server.route('/read/<index>')
         def read(index):
             #return with data
-            with open("{index}.bin", "rb") as f:
+            with open(os.path.join(self.data_dir, f"{index}.bin"), "rb") as f:
                 data = f.read(index)
                 return jsonify(id = self.id, index = index, data=data)
             
