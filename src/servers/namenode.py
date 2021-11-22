@@ -51,9 +51,12 @@ class NameNode :
         self.server.run('127.0.0.1',port)
 
     def sendHeartBeats(self):
-        while True:
-            print(datetime.now())
-            time.sleep(5)
+        response = requests.get('/')
+        if response['message'] == 'Awake':
+            self.datanode_states[response['id']].status = 1
+        else:
+            self.datanode_states[response['id']].status = 0
+        time.sleep(5)
     
     def initHeartBeats(self):
         heartbeat = Thread(target=self.sendHeartBeats)
