@@ -62,12 +62,9 @@ if __name__ == '__main__':
 
     #add path to argpath
     config['path_to_argpath']=argpath
-    
-    
-
+       
     # start namenode process
-    namenode_process = subprocess.Popen(['python3', namenode, argpath], stderr=stdout)
-    
+    namenode_process = subprocess.Popen(['python3', namenode, argpath])
     # log pid to tmp file so stop-all can terminate it.
     with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'w+') as f:
        print(namenode_process.pid, file=f)
@@ -81,13 +78,13 @@ if __name__ == '__main__':
     pid_file = os.path.join(HADOOP_HOME, "tmp", "pids.txt")
     open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'w').close()
 
-    with open('start-datanodes.sh', 'w') as f:
-        for i in range(numD):
-            pass
-            datanode_process = subprocess.Popen(['python3', datanode, str(i+1), str(ports[i]), str(config['block_size'])], stderr=stdout)
-            with open(pid_file, 'a') as f:
-                print(datanode_process.pid, file=f)
-  
+    
+    for i in range(numD):
+        pass
+        datanode_process = subprocess.Popen(['python3', datanode, str(i+1), str(ports[i]), str(config['block_size'])])
+        with open(pid_file, 'a') as f:
+            print(datanode_process.pid, file=f)
+
     with open(config_path,'w+') as f:
         json.dump(config, f)
 
