@@ -16,9 +16,13 @@ def checkNameNode(config):
 
     p_namenode = os.path.join(config['path_to_namenodes'], 'namenode1')
     s_namenode = os.path.join(config['path_to_namenodes'], 'namenode2')
+    usr = os.path.join(p_namenode, config["fs_path"])
     try:
         os.mkdir(p_namenode)
         os.mkdir(s_namenode)
+        os.mkdir(usr)
+    
+    
 
     except FileExistsError as e:
         print("Namenodes already exist. Using existing namenode, might require format...")

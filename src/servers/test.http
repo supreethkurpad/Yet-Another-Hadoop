@@ -1,10 +1,8 @@
-POST http://127.0.0.1:2000/write HTTP/1.1
+POST http://127.0.0.1:5000/put HTTP/1.1
 Content-Type: application/json
 
 {
-    "data":"Hello World",
-    "2000":"1",
-    "3000":"2",
-    "4000":"3",
-    "5000":"4"
+    "filepath": "/mnt/c/Users/supre/BD/test.txt",
+    "path_in_fs": "user/a.txt",
+    "size": "1"
 }

@@ -9,7 +9,7 @@ from state import DataNodeState
 from random import choice
 from threading import Thread
 import time
-
+from ..hash import hash
 """
 Status codes:
 0: [OK]
@@ -46,7 +46,7 @@ class NameNode :
         self.datanode_states = self.readDataNodeStates()
 
         # start heartbeats
-        self.initHeartBeats()
+        # self.initHeartBeats()
         # start the server listening for requests
         self.server.run('127.0.0.1',port)
 
@@ -71,10 +71,11 @@ class NameNode :
         for i in range(len(self.datanodes)):
             data_dir = os.path.join(datanode_path, f"datanode{i+1}")
             free_blocks = datanode_size - sum(os.path.getsize(os.path.join(data_dir,f)) for f in os.listdir(data_dir))
-            newState = DataNodeState(i+1, self.datanodes[i], block_size, free_blocks, status=0)
+            newState = DataNodeState(i+1, self.datanodes[i], block_size, free_blocks, status=1)
             states.append(newState)
         print(states)    
         return states
+
     
     def getBlocks(self, num_blocks, r):
         """
@@ -82,12 +83,26 @@ class NameNode :
         Pick an available index from each and return list of (id,index)
         Repeat process num_blocks times.
         """
-        available_dn = self.datanode_states
-        for block in range(num_blocks):
+        flag = False
+        nodes = []
+        for block in range(int(num_blocks)):
+            available_dn = set(dn for dn in self.datanode_states if dn.status==1)
             for i in range(r):
-                free_dn = choice(available_dn)
+                flag = True
+                while(flag and len(available_dn)>0):
+                    free_dn = choice(available_dn)
+                    if free_dn.free_blocks>0:
+                        nodes.append(free_dn.id)
+                        available_dn.remove(free_dn)
+                        flag = False
+                    else:
+                        available_dn.remove(free_dn)
+                        free_dn.status=2
 
-        pass
+        if(len(nodes) == num_blocks*r):
+            return nodes
+        
+        return -1
 
     def initRequestHandler(self):
         @self.server.route('/put',methods=['POST'])
@@ -113,14 +128,15 @@ class NameNode :
             """
             req_data=request.json
             fspath = req_data.get("path_in_fs")
-            num_blocks = req_data.get('size')
+            print(fspath)
+            num_blocks = int(req_data.get('size'))
             filepath = req_data.get('filepath')
 
             if not fspath.startswith(self.config['fs_path']):
                 fspath = os.path.join(self.config["fs_path"], fspath)
             
             fspath = os.path.join(self.path, fspath)
-            
+            print(fspath)
             if not os.path.exists(os.path.dirname(fspath)):
                 return {"error":"FSPath Not Found", "code":"1"}
 
@@ -130,12 +146,12 @@ class NameNode :
             newfile = open(fspath, 'w')
 
             blocks = self.getBlocks(num_blocks, int(self.config['replication_factor']))
-            if not blocks:
+            if blocks == -1:
                 return {"error":"Not enough memory!", "code":"3"}
-
-            for block in blocks:
-                for d_id, idx in block:
-                    print(d_id, idx, file=newfile, sep=",", end=" ")
+            
+            
+            for d_id in blocks:
+                print(d_id, hash(), file=newfile, sep=",", end=" ")
                 print(file=newfile)
             newfile.close()
 
