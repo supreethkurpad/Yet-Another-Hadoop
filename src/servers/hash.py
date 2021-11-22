@@ -1,5 +1,5 @@
 import hashlib
 
 def hash(x):
-    x = hashlib.sha512(x.encode())
+    x = hashlib.sha256(x.encode())
     return x.hexdigest()

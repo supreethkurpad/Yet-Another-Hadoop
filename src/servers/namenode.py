@@ -9,7 +9,7 @@ from state import DataNodeState
 from random import choice
 from threading import Thread
 import time
-from ..hash import hash
+from hash import hash
 """
 Status codes:
 0: [OK]
@@ -93,9 +93,9 @@ class NameNode :
             for i in range(r):
                 flag = True
                 while(flag and len(available_dn)>0):
-                    free_dn = choice(available_dn)
+                    free_dn = choice(list(available_dn))
                     if free_dn.free_blocks>0:
-                        nodes.append(free_dn.id)
+                        nodes.append((free_dn.id, block))
                         available_dn.remove(free_dn)
                         flag = False
                     else:
@@ -134,33 +134,42 @@ class NameNode :
             print(fspath)
             num_blocks = int(req_data.get('size'))
             filepath = req_data.get('filepath')
+            filename = os.path.basename(filepath)
+            
 
             if not fspath.startswith(self.config['fs_path']):
                 fspath = os.path.join(self.config["fs_path"], fspath)
             
-            fspath = os.path.join(self.path, fspath)
             print(fspath)
-            if not os.path.exists(os.path.dirname(fspath)):
+
+            actual_path = os.path.join(self.path, fspath, filename)
+
+            if not os.path.exists(os.path.dirname(actual_path)):
                 return {"error":"FSPath Not Found", "code":"1"}
 
-            if os.path.exists(fspath):
+            print(actual_path)
+            if os.path.exists(actual_path):
                 return {"error":"file with same name already exists", "code":"2"}
             
-            newfile = open(fspath, 'w')
+            newfile = open(actual_path, 'w')
 
             blocks = self.getBlocks(num_blocks, int(self.config['replication_factor']))
             if blocks == -1:
                 return {"error":"Not enough memory!", "code":"3"}
-            
-            
-            for d_id in blocks:
-                print(d_id, hash(), file=newfile, sep=",", end=" ")
-                print(file=newfile)
+
+            count = 1    
+            for d_id, block_idx in blocks:
+                print(d_id, hash(fspath+str(block_idx)), file=newfile, sep=",", end=" ")
+                
+                if count%int(self.config['replication_factor'])==0:
+                    print(file=newfile)
+                
+                count += 1
             newfile.close()
 
-            with open(fspath, 'r') as f:
+            with open(actual_path, 'r') as f:
                 return {
-                    "data":fspath.read(),
+                    "data":f.read(),
                     "code":"0"
                 }
 
