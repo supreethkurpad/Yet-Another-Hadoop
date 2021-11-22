@@ -168,10 +168,10 @@ class NameNode :
             newfile.close()
 
             with open(actual_path, 'r') as f:
-                return {
+                return json.dumps({
                     "data":f.read(),
                     "code":"0"
-                }
+                })
 
         @self.server.route('/cat',methods=['POST'])
         def cat():
