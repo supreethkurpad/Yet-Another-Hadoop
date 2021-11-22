@@ -35,6 +35,7 @@ class NameNode :
 
         if primary:
             self.path = self.config['path_to_primary']
+
         else:
             self.path = self.config['path_to_secondary']
         
@@ -51,9 +52,9 @@ class NameNode :
         datanode_path = self.config['path_to_datanodes']
         datanode_size = self.config['datanode_size']
         block_size = self.config['block_size']
-        for i in range(len(os.listdir(datanode_path))):
-            data_dir = os.path.join((datanode_path, f"datanode_{i}"))
-            free_blocks = datanode_size - sum(os.path.getsize(f) for f in os.path.join((data_dir, os.listdir(data_dir))))
+        for i in range(len(self.datanodes)):
+            data_dir = os.path.join(datanode_path, f"datanode{i+1}")
+            free_blocks = datanode_size - sum(os.path.getsize(os.path.join(data_dir,f)) for f in os.listdir(data_dir))
             newState = DataNodeState(self.datanodes[i], block_size, free_blocks, status=0)
             states.append(newState)
         print(states)    
@@ -104,9 +105,9 @@ class NameNode :
             filename = os.path.basename(filepath)
 
             fspath = os.path.join(self.path, fspath)
-            if not os.path.exists(fspath):
+            
+            if not os.path.exists(os.path.dirname(fspath)):
                 return {"error":"FSPath Not Found", "code":"1"}
-            fspath = os.path.join(fspath, filename)
 
             if os.path.exists(fspath):
                 return {"error":"file with same name already exists", "code":"2"}
