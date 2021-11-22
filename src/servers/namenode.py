@@ -5,7 +5,7 @@ from flask.logging import default_handler
 import os
 from sys import argv
 import pickle
-
+from state import DataNodeState
 
 """
 Status codes:
@@ -23,7 +23,6 @@ class NameNode :
         self.primary = primary
         self.server.logger.removeHandler(default_handler)
         self.datanodes = dn_ports
-        self.datanode_states = self.readDataNodeStates()
         # defines routes 
         self.initRequestHandler()
 
@@ -39,6 +38,8 @@ class NameNode :
         else:
             self.path = self.config['path_to_secondary']
         
+        # gather state of datanodes
+        self.datanode_states = self.readDataNodeStates()
         # start the server listening for requests
         self.server.run('127.0.0.1',port)
 
