@@ -17,13 +17,10 @@ class Client:
     def post(self,port,cmd,data):
         if((requests.head('http://localhost:'+str(port))).status_code==200):
             try:
-                print(data)
-                print(port)
+ 
                 res=requests.post('http://localhost:'+str(port)+'/'+str(cmd),json=data) 
-                print("done")
                 return res
             except Exception as e:
-                    print("exception")
                     print(e)
         return None
 
@@ -32,8 +29,6 @@ class Client:
         with open(self.params[1], 'rb') as f:
             
             dnodes=metadata.split('\n')
-            print(dnodes)
-            print("partition")
             for dn in dnodes:
                 dn=dn.rstrip()
                 if(dn!=""):
@@ -41,12 +36,10 @@ class Client:
                     chunk = f.read(self.config['block_size'])
                     req_data={'data': chunk.decode('utf-8')}
                     dns = list(dnode_dict.keys())
-                    print(dns)
                     for i in range(self.config['replication_factor']):
                         req_data[self.ports[int(dns[i])-1]] = dnode_dict[dns[i]]
 
                     final_res=self.post(self.ports[int(dns[0])-1],'write',req_data)
-                    print("done")
                     return final_res
         
 
@@ -60,7 +53,6 @@ class Client:
             return
 
         file_size = os.path.getsize(self.params[1])
-        #data=
         res = self.post(5000,self.params[0],{"filepath":self.params[1],"path_in_fs":self.params[2],\
             "size":math.ceil(file_size/self.config['block_size'])}) 
         res=res.json()
@@ -68,28 +60,23 @@ class Client:
             print("Error occured with status and description ",res['code']," - ",res['error'])
             return
         #recieves file
-        print("naemnode works")
         final_res =self.partition(res['data'])
 
         if(final_res==None):
             print("failed to insert file")
 
-    #res={1:[2,3],23:[1,2]}
     def getfileblocks(self,res):
         res=res.json()
         if(res['code']!='0'):
             print("Error occured with status and description ",res['code']," - ",res['error'])
             return
-        print(res)
         dnodes=res['data'].split('\n')
-        print(dnodes)
         for dn in dnodes:
             dn=dn.rstrip()
-            print(dn)
             if(dn!=""):
                 dnode_dict = dict(map(lambda x: x.split(','), dn.split(' ')))
                 for p in dnode_dict.keys():
-                    data=requests.get('http://localhost:'+str(self.ports[int(p)-1]),'read',dnode_dict[p])
+                    data=requests.get('http://localhost:'+str(self.ports[int(p)-1])+'/read/'+str(dnode_dict[p]))
                     d=data.json()
                     if(data is None):
                         print("datanode down")
