@@ -59,6 +59,13 @@ class DataNode :
             with open(os.path.join(self.data_dir, f"{index}.bin"), "rb") as f:
                 data = f.read()
                 return jsonify(id = self.id, index = index, data=data.decode())
+        
+        @self.server.route('/delete/<index>')
+        def delete(index):
+            path = os.path.join(self.data_dir, f"{index}.bin")
+            os.remove(path)
+            return jsonify(id = self.id, index = index, message="Deleted block successfully.")
+
             
         
         @self.server.route('/')
