@@ -3,3 +3,6 @@ hadoop_env/
 configs/
 __pycache__/
 tmp/
+tmp/*
+directories/
+directories/*
