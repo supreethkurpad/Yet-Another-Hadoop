@@ -60,10 +60,23 @@ class DataNode :
                 data = f.read()
                 return jsonify(id = self.id, index = index, data=data.decode())
         
-        @self.server.route('/delete/<index>')
+        @self.server.route('/delete', methods=['POST'])
         def delete(index):
-            path = os.path.join(self.data_dir, f"{index}.bin")
-            os.remove(path)
+            js = request.json
+            port = str(self.port)
+
+            index = js[port]
+
+            os.remove(os.path.join(self.data_dir, f"{index}.bin"))
+            del js[port]
+
+            remaining_datanodes = list(js.keys() - {'data'})
+            
+            if(len(remaining_datanodes) != 0):
+                next_port = remaining_datanodes[0]
+                url = f"http://localhost:{next_port}/delete"
+                res = requests.post(url, json=js)
+        
             return jsonify(id = self.id, index = index, message="Deleted block successfully.")
 
             

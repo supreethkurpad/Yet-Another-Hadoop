@@ -1,1 +1,8 @@
-GET http://127.0.0.1:3000/delete/1 HTTP/1.1
+POST http://127.0.0.1:60351/delete HTTP/1.1
+Content-Type: application/json
+
+{
+    "60351": "5bd73fffc5ca1295c2261f907677c48be3791c35ed81410882782c9eb7291a6e",
+    "35375": "5bd73fffc5ca1295c2261f907677c48be3791c35ed81410882782c9eb7291a6e",
+    "47805": "5bd73fffc5ca1295c2261f907677c48be3791c35ed81410882782c9eb7291a6e"
+}
