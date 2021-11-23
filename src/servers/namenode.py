@@ -75,7 +75,8 @@ class NameNode :
         for i in range(len(self.datanodes)):
             data_dir = os.path.join(datanode_path, f"datanode{i+1}")
             free_blocks = datanode_size - sum(os.path.getsize(os.path.join(data_dir,f)) for f in os.listdir(data_dir))
-            newState = DataNodeState(i+1, self.datanodes[i], block_size, free_blocks, status=1)
+            free_blocks = free_blocks // block_size
+            newState = DataNodeState(i+1, self.datanodes[i], datanode_size, free_blocks, status=1)
             states.append(newState)
         print(states)    
         return states
@@ -91,6 +92,9 @@ class NameNode :
         nodes = []
         for block in range(int(num_blocks)):
             available_dn = set(dn for dn in self.datanode_states if dn.status==1)
+            for dn in available_dn:
+                print(dn.id, dn.status, dn.free_blocks)
+
             for i in range(r):
                 flag = True
                 while(flag and len(available_dn)>0):
@@ -105,7 +109,7 @@ class NameNode :
 
         if(len(nodes) == num_blocks*r):
             for node in nodes:
-                node.free_blocks -= 1
+                self.datanode_states[node[0]-1].free_blocks -= 1
             return nodes
 
         return -1
@@ -154,12 +158,13 @@ class NameNode :
             if os.path.exists(actual_path):
                 return json.dumps({"error":"file with same name already exists", "code":"2"})
             
-            newfile = open(actual_path, 'w')
 
             blocks = self.getBlocks(num_blocks, int(self.config['replication_factor']))
             if blocks == -1:
                 return json.dumps({"error":"Not enough memory!", "code":"3"})
 
+            newfile = open(actual_path, 'w')
+            
             count = 1    
             for d_id, block_idx in blocks:
                 print(d_id, hash(fspath+str(block_idx)), file=newfile, sep=",", end=" ")
@@ -315,7 +320,7 @@ class NameNode :
             
             for line in metadata.split('\n'):
                 id, _ = line.split(',')
-                self.datanode_states[id].free_blocks += 1
+                self.datanode_states[id-1].free_blocks += 1
 
             os.remove(actual_path)
             return json.dumps({

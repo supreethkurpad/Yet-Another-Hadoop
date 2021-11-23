@@ -3,7 +3,7 @@ import json
 import random
 import socket
 import os
-from sys import argv, path, stdout
+from sys import argv, stdout
 from functools import reduce 
 import pickle
 from contextlib import closing
@@ -42,6 +42,7 @@ def prompt(config):
         #format
         for dir in os.listdir(config["path_to_namenodes"]):
             delete(os.path.join(config["path_to_namenodes"], dir))
+            os.mkdir(os.path.join(config['path_to_namenodes'], dir, config['fs_path']))
         for dir in os.listdir(config["path_to_datanodes"]):
             delete(os.path.join(config["path_to_datanodes"], dir))
     else:
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     
 
     if len(argv) < 2:
-        print("Incorerct usage.Expected python3 start-all.py /path/to/dfs_setup_config ")
+        print("Incorrect usage.Expected python3 start-all.py /path/to/dfs_setup_config ")
         exit(1)
     config_path = argv[1]
     
