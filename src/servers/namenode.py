@@ -9,6 +9,7 @@ from state import DataNodeState
 from random import choice
 from threading import Thread
 import time
+import requests
 from hash import hash
 """
 Status codes:
@@ -145,17 +146,17 @@ class NameNode :
             actual_path = os.path.join(self.path, fspath, filename)
 
             if not os.path.exists(os.path.dirname(actual_path)):
-                return {"error":"FSPath Not Found", "code":"1"}
+                return json.dumps({"error":"FSPath Not Found", "code":"1"})
 
             print(actual_path)
             if os.path.exists(actual_path):
-                return {"error":"file with same name already exists", "code":"2"}
+                return json.dumps({"error":"file with same name already exists", "code":"2"})
             
             newfile = open(actual_path, 'w')
 
             blocks = self.getBlocks(num_blocks, int(self.config['replication_factor']))
             if blocks == -1:
-                return {"error":"Not enough memory!", "code":"3"}
+                return json.dumps({"error":"Not enough memory!", "code":"3"})
 
             count = 1    
             for d_id, block_idx in blocks:
@@ -185,18 +186,18 @@ class NameNode :
 
             fspath = os.path.join(self.path, fspath)
             if not os.path.exists(fspath):
-                return {
+                return json.dumps({
                     "error":"fspath not found",
                     "code":"1"
-                }
+                })
             
             with open(fspath, 'r') as f:
                 metadata = f.read()
             
-            return {
+            return json.dumps({
                 "data": metadata,
                 "code": "0"
-            }
+            })
 
 
         @self.server.route('/rmdir',methods=['POST'])
@@ -213,15 +214,15 @@ class NameNode :
                 acutal_path = os.path.join(self.path, fspath)
                 os.rmdir(acutal_path)
             except:
-                return {
+                return json.dumps({
                     "error":"Could not delete directory. Check the path and also make sure it is empty",
                     "code":"1"
-                }
+                })
 
-            return {
+            return json.dumps({
                 "code":"0",
                 "msg":"deleted directory"
-            }
+            })
 
         @self.server.route('/mkdir',methods=['POST'])
         def mkdir():
@@ -234,38 +235,85 @@ class NameNode :
                 fspath = os.path.join(self.config['fs_path'], fspath)
             
             if os.path.exists(fspath):
-                return {
+                return json.dumps({
                     "error":"directory already exists",
                     "code":"1"
-                }
+                })
 
             try:
                 acutal_path = os.path.join(self.path, fspath)
                 os.mkdir(acutal_path)
             except:
-                return {
+                return json.dumps({
                     "error":"Invalid path to directory",
                     "code":"1"
-                }
+                })
 
-            return {
+            return json.dumps({
                 "code":"0",
                 "msg":"created directory"
-            }
+            })
         
         @self.server.route('/ls',methods=['POST'])
         def ls():
+            """
+            req{
+                fspath:
+            }
+            res{
+                error:"msg"
+                code: not 0
+
+                else
+
+                data:"string output of ls"
+                code:0
+            }
+            """
             req_data=request.json
-            #req_data={"dpath":"path/to/dir"}
-            #return ['/test.txt','test2.txt'] list of files under dir
-            return[]
+            fspath = req_data.get('fspath')
+            actual_path = os.path.join(self.path, fspath)
+            if not os.path.exists(actual_path):
+                return json.dumps({
+                    "code":"1",
+                    "error":"No such File/Directory"
+                })
+            if os.path.isfile(actual_path):
+                return json.dumps({
+                    "data": os.path.basename(actual_path)
+                })
+            return json.dumps({
+                "data": '\n'.join(os.listdir(actual_path)),
+                "code": "0"
+            })
         
         @self.server.route('/rm',methods=['POST'])
         def rm():
+            """
+            req{
+                fspath
+            }
+            res{
+                data: all metadata of the file
+            }
+            """
             req_data=request.json
-            #req_data={"path":"path/to/file"}
-            return "File/folder deleted successfully"
-            pass
+            fspath = req_data.get('fspath')
+            actual_path = os.path.join(self.path, fspath)
+
+            if not os.path.exists(actual_path):
+                return json.dumps({
+                    "error":"file not found",
+                    "code":"1"
+                })
+            with open(actual_path, 'r') as f:
+                metadata = f.read()
+            
+            os.remove(actual_path)
+            return json.dumps({
+                "data":metadata,
+                "code":"0"
+            })
         
         @self.server.route('/')
         def heartbeat():
