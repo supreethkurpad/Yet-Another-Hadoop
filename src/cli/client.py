@@ -134,7 +134,7 @@ class Client:
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name file or directory')
                         continue
-                    res=self.post(5000, self.params[0], {'path':self.params[1]})
+                    res=self.post(5000, self.params[0], {'fspath':self.params[1]})
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
@@ -155,10 +155,10 @@ class Client:
 
                 elif(self.params[0]=='ls'):
                     res=None
-                    req_param=self.config['fspath']
-                    if(len(self.params)==1):
+                    req_param=self.config['fs_path']
+                    if(len(self.params)==2):
                         req_param=self.params[1]
-                    res=self.post(5000,self.params[0],{"fpath":req_param})
+                    res=self.post(5000,self.params[0],{"fspath":req_param})
                     res=res.json()
                     if (res['code']!='0'):
                         print(res['error'])
