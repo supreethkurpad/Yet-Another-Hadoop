@@ -3,10 +3,11 @@ import json
 import random
 import socket
 import os
-from sys import argv, stdout
+from sys import argv, path, stdout
 from functools import reduce 
 import pickle
 from contextlib import closing
+import shutil
 
 DEFAULT_PORT=5000
 NULL_FILE=os.devnull
@@ -23,6 +24,29 @@ def getPortNumbers(n) -> list:
         
     return ports    
 
+def delete(folder):
+    for filename in os.listdir(folder):
+        file_path = os.path.join(folder, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
+        except Exception as e:
+            print('Failed to delete %s. Reason: %s' % (file_path, e))
+        
+def prompt(config):
+    # while(True):
+    ch = input('Format DFS? [y/n]').lower()
+    if ch == 'y':
+        #format
+        for dir in os.listdir(config["path_to_namenodes"]):
+            delete(os.path.join(config["path_to_namenodes"], dir))
+        for dir in os.listdir(config["path_to_datanodes"]):
+            delete(os.path.join(config["path_to_datanodes"], dir))
+    else:
+        exit(0)
+
 if __name__ == '__main__':
     
 
@@ -35,6 +59,12 @@ if __name__ == '__main__':
     config = {}
     with open(config_path, 'r') as f:
         config = json.load(f) 
+
+    if(config["num_loads"] == 0):
+        prompt(config)
+
+    config["num_loads"]+=1
+
 
     # set up logging paths. writes to /dev/null by default 
     #DN_LOG_FILE = config.get('datanode_log_path', NULL_FILE)
