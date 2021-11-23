@@ -81,6 +81,7 @@ class Client:
                     d=data.json()
                     if(data is None):
                         print("datanode down")
+                        return
                     else:
                         print(d['data'])
                         break
@@ -125,7 +126,7 @@ class Client:
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
-                        return
+                        continue
                     print(res['msg']) 
                 
                 # Delete file or directory
@@ -138,7 +139,7 @@ class Client:
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
-                        return
+                        continue
                     self.delblocks(res['data'])
                     
                 
@@ -150,7 +151,7 @@ class Client:
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
-                        return
+                        continue
                     print(res['msg']) 
 
                 elif(self.params[0]=='ls'):
@@ -162,7 +163,7 @@ class Client:
                     res=res.json()
                     if (res['code']!='0'):
                         print(res['error'])
-                        return
+                        continue
                     print("files are:")
                     print(res['data'])
 
@@ -171,8 +172,6 @@ class Client:
                         print("enter command correctly")
                         continue
                     res=self.post(5000,self.params[0],{"fspath":self.params[1]})
-                    if(res==None):
-                        print("file not found in hdfs")
                     #expects response as file
                     self.getfileblocks(res)
 
