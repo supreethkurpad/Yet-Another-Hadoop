@@ -13,13 +13,17 @@ DEFAULT_PORT=5000
 NULL_FILE=os.devnull
 HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
 
-def getPortNumbers(n) -> list:
+def getPortNumbers(n, blacklist=[]) -> list:
     ports = []
     while n:
         with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as a_socket:
             a_socket.bind(('', 0))
             a_socket.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            ports.append(a_socket.getsockname()[1])
+            port = a_socket.getsockname()[1]
+            if port not in blacklist:
+                ports.append(port)
+            else:
+                continue
             n-=1
         
     return ports    
@@ -82,6 +86,10 @@ if __name__ == '__main__':
         for i in ports:
             print(i,file=f)
 
+    # assign ports to namenodes
+    snn_port = getPortNumbers(1, blacklist=ports)[0]
+    config['pnn_port'] = DEFAULT_PORT
+    config['snn_port'] = snn_port
     
     namenode = os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')
     namenode_args = [DEFAULT_PORT, ports, config_path, True]
@@ -100,6 +108,24 @@ if __name__ == '__main__':
     with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'w+') as f:
        print(namenode_process.pid, file=f)
 
+    # Repeating Process for Secondary NameNode
+    s_namenode = os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')
+    s_namenode_args = [snn_port, ports, config_path, True]
+    s_argpath = os.path.join(HADOOP_HOME, 'tmp', 's_namenode_arg.pickle')
+    with open(s_argpath, 'wb') as f:
+        pickle.dump(s_namenode_args, file=f)
+
+    #add path to argpath
+    config['path_to_s_argpath']=argpath
+    
+    # start namenode process
+    s_namenode_process = subprocess.Popen(['python3', namenode, s_argpath])
+    # log pid to tmp file so stop-all can terminate it.
+    with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'a') as f:
+       print(s_namenode_process.pid, file=f)
+
+
+    # Starting datanodes
     numD = config['num_datanodes']
 
         
@@ -107,8 +133,7 @@ if __name__ == '__main__':
     pidD = []
 
     pid_file = os.path.join(HADOOP_HOME, "tmp", "pids.txt")
-    open(os.path.join(HADOOP_HOME, 'tmp', 'datanodespid.txt'), 'w').close()
-
+    config['pid_file'] = pid_file
     
     for i in range(numD):
         pass
