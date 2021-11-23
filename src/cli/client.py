@@ -61,9 +61,10 @@ class Client:
             return
         #recieves file
         final_res =self.partition(res['data'])
-
-        if(final_res==None):
-            print("failed to insert file")
+        final_res=final_res.json()
+        #if(final_res==None):
+           # print("failed to insert file")
+        print("File inserted successfully")
 
     def getfileblocks(self,res):
         res=res.json()
@@ -85,6 +86,19 @@ class Client:
                         break
 
             
+    def delblocks(self,metadata):
+        dnodes=metadata.split('\n')
+        for dn in dnodes:
+            dn=dn.rstrip()
+            if(dn!=""):
+                dnode_dict = dict(map(lambda x: x.split(','), dn.split(' ')))
+                req_data={}
+                dns = list(dnode_dict.keys())
+                for i in range(self.config['replication_factor']):
+                    req_data[self.ports[int(dns[i])-1]] = dnode_dict[dns[i]]
+
+                final_res=self.post(self.ports[int(dns[0])-1],'delete',req_data)
+                print("Deleted successfully")
 
     
 
@@ -108,7 +122,11 @@ class Client:
                         print('Incorrect number of parameters, enter name of one directory')
                         continue
                     res=self.post(5000, self.params[0], {'fspath':self.params[1]})
-                    print(res.text) 
+                    res=res.json()
+                    if(res['code']!='0'):
+                        print(res['error'])
+                        return
+                    print(res['msg']) 
                 
                 # Delete file or directory
                 elif(self.params[0]=='rm'): 
@@ -117,27 +135,37 @@ class Client:
                         print('Incorrect number of parameters, enter name file or directory')
                         continue
                     res=self.post(5000, self.params[0], {'path':self.params[1]})
-                    print(res.text) 
+                    res=res.json()
+                    if(res['code']!='0'):
+                        print(res['error'])
+                        return
+                    self.delblocks(res['data'])
+                    
                 
                 elif(self.params[0]=='rmdir'):
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name of one directory')
                         continue
                     res=self.post(5000, self.params[0], {'fspath':self.params[1]})
-                    print(res.text) 
+                    res=res.json()
+                    if(res['code']!='0'):
+                        print(res['error'])
+                        return
+                    print(res['msg']) 
 
                 elif(self.params[0]=='ls'):
-                    if len(self.params)!=2:
-                        print("enter command correctly")
-                        continue
                     res=None
-                    res=self.post(5000,self.params[0],{"fpath":self.params[1]})
-                    if (res== None):
-                        print("Directory doesnt exist in hdfs")
+                    req_param=self.config['fspath']
+                    if(len(self.params)==1):
+                        req_param=self.params[1]
+                    res=self.post(5000,self.params[0],{"fpath":req_param})
+                    res=res.json()
+                    if (res['code']!='0'):
+                        print(res['error'])
                         return
                     print("files are:")
-                    for i in res:
-                        print(res)
+                    print(res['data'])
+
                 elif(self.params[0]=='cat'):
                     if len(self.params)!=2:
                         print("enter command correctly")
