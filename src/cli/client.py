@@ -4,25 +4,56 @@ import sys
 import json
 import urllib.request
 import math
+from time import sleep
+
 
 HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
 
 
 class Client:
-    def __init__(self,config,ports):
-        self.config=config
-        self.ports=ports
+    def __init__(self,config_path):
+        self.config_path= config_path
+        self.config=self.getconfig()
+        self.ports=self.getports()
+        self.p_port=self.config['pnn_port']
         self.params=None
 
+    def getconfig(self):
+        config = {}
+        with open(self.config_path, 'r') as f:
+            config = json.load(f)
+        return config
+    
+    def getports(self):
+        with open(self.config['path_to_ports'],'r') as f:
+            ports=f.read().splitlines()
+        return ports
+
+
+
+
     def post(self,port,cmd,data):
-        if((requests.head('http://localhost:'+str(port))).status_code==200):
-            try:
- 
-                res=requests.post('http://localhost:'+str(port)+'/'+str(cmd),json=data) 
-                return res
-            except Exception as e:
-                    print(e)
-        return None
+        try:
+            if((requests.head('http://localhost:'+str(port))).status_code==200):
+                try:
+    
+                    res=requests.post('http://localhost:'+str(port)+'/'+str(cmd),json=data) 
+                    return res
+                except Exception as e:
+                        print(e)
+        except:
+            print("in else")
+            sleep(15)
+            self.config=self.getconfig()
+            self.p_port=self.config['pnn_port']
+            if((requests.head('http://localhost:'+str(self.p_port))).status_code==200):
+                try:
+                    res=requests.post('http://localhost:'+str(self.p_port)+'/'+str(cmd),json=data) 
+                    return res
+                except Exception as e:
+                        print(e)
+
+
 
     def partition(self,metadata):
         
@@ -53,7 +84,7 @@ class Client:
             return
 
         file_size = os.path.getsize(self.params[1])
-        res = self.post(5000,self.params[0],{"filepath":self.params[1],"path_in_fs":self.params[2],\
+        res = self.post(self.p_port,self.params[0],{"filepath":self.params[1],"path_in_fs":self.params[2],\
             "size":math.ceil(file_size/self.config['block_size'])}) 
         res=res.json()
         if(res['code']!='0'):
@@ -122,7 +153,7 @@ class Client:
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name of one directory')
                         continue
-                    res=self.post(5000, self.params[0], {'fspath':self.params[1]})
+                    res=self.post(self.p_port, self.params[0], {'fspath':self.params[1]})
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
@@ -135,7 +166,7 @@ class Client:
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name file or directory')
                         continue
-                    res=self.post(5000, self.params[0], {'fspath':self.params[1]})
+                    res=self.post(self.p_port, self.params[0], {'fspath':self.params[1]})
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
@@ -147,7 +178,7 @@ class Client:
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name of one directory')
                         continue
-                    res=self.post(5000, self.params[0], {'fspath':self.params[1]})
+                    res=self.post(self.p_port, self.params[0], {'fspath':self.params[1]})
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
@@ -159,7 +190,7 @@ class Client:
                     req_param=self.config['fs_path']
                     if(len(self.params)==2):
                         req_param=self.params[1]
-                    res=self.post(5000,self.params[0],{"fspath":req_param})
+                    res=self.post(self.p_port,self.params[0],{"fspath":req_param})
                     res=res.json()
                     if (res['code']!='0'):
                         print(res['error'])
@@ -171,7 +202,7 @@ class Client:
                     if len(self.params)!=2:
                         print("enter command correctly")
                         continue
-                    res=self.post(5000,self.params[0],{"fspath":self.params[1]})
+                    res=self.post(self.p_port,self.params[0],{"fspath":self.params[1]})
                     #expects response as file
                     self.getfileblocks(res)
 
@@ -198,15 +229,12 @@ if __name__ == '__main__':
             exit(1)
 
         #get configs
-        config = {}
-        with open(config_path, 'r') as f:
-            config = json.load(f)
+        
 
         #get ports
-        with open(config['path_to_ports'],'r') as f:
-            ports=f.read().splitlines()
+        
+        new_client = Client(config_path)
 
-        new_client = Client(config,ports)
         new_client.startReqHandler()
 
     except KeyboardInterrupt:
