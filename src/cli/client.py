@@ -40,7 +40,7 @@ class Client:
                         req_data[self.ports[int(dns[i])-1]] = dnode_dict[dns[i]]
 
                     final_res=self.post(self.ports[int(dns[0])-1],'write',req_data)
-                    return final_res
+        return final_res
         
 
     def sendputRequest(self):
@@ -98,7 +98,7 @@ class Client:
                     req_data[self.ports[int(dns[i])-1]] = dnode_dict[dns[i]]
 
                 final_res=self.post(self.ports[int(dns[0])-1],'delete',req_data)
-                print("Deleted successfully")
+        print("Deleted successfully")
 
     
 
