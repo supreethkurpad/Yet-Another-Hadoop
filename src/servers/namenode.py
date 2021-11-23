@@ -283,15 +283,37 @@ class NameNode :
                     "data": os.path.basename(actual_path)
                 })
             return json.dumps({
-                "data": os.listdir(actual_path)
+                "data": '\n'.join(os.listdir(actual_path)),
+                "code": "0"
             })
         
         @self.server.route('/rm',methods=['POST'])
         def rm():
+            """
+            req{
+                fspath
+            }
+            res{
+                data: all metadata of the file
+            }
+            """
             req_data=request.json
-            #req_data={"path":"path/to/file"}
-            return "File/folder deleted successfully"
-            pass
+            fspath = req_data.get('fspath')
+            actual_path = os.path.join(self.path, fspath)
+
+            if not os.path.exists(actual_path):
+                return json.dumps({
+                    "error":"file not found",
+                    "code":"1"
+                })
+            with open(actual_path, 'r') as f:
+                metadata = f.read()
+            
+            os.remove(actual_path)
+            return json.dumps({
+                "data":metadata,
+                "code":"0"
+            })
         
         @self.server.route('/')
         def heartbeat():
