@@ -155,8 +155,8 @@ class Client:
 
                 elif(self.params[0]=='ls'):
                     res=None
-                    req_param=self.config['fspath']
-                    if(len(self.params)==1):
+                    req_param=self.config['fs_path']
+                    if(len(self.params)==2):
                         req_param=self.params[1]
                     res=self.post(5000,self.params[0],{"fspath":req_param})
                     res=res.json()
