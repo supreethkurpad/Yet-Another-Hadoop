@@ -104,8 +104,10 @@ class NameNode :
                         free_dn.status=2
 
         if(len(nodes) == num_blocks*r):
+            for node in nodes:
+                node.free_blocks -= 1
             return nodes
-        
+
         return -1
 
     def initRequestHandler(self):
@@ -311,6 +313,10 @@ class NameNode :
             with open(actual_path, 'r') as f:
                 metadata = f.read()
             
+            for line in metadata.split('\n'):
+                id, _ = line.split(',')
+                self.datanode_states[id].free_blocks += 1
+
             os.remove(actual_path)
             return json.dumps({
                 "data":metadata,
