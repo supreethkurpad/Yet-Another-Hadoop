@@ -61,7 +61,7 @@ class DataNode :
                 return jsonify(id = self.id, index = index, data=data.decode())
         
         @self.server.route('/delete', methods=['POST'])
-        def delete(index):
+        def delete():
             js = request.json
             port = str(self.port)
 
