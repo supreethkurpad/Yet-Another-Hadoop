@@ -29,7 +29,6 @@ class NameNode :
         # self.server.logger.removeHandler(default_handler)
         self.datanodes = dn_ports
         
-        print("HERE")
         # defines routes 
         self.initRequestHandler()
 
@@ -47,18 +46,28 @@ class NameNode :
         self.datanode_states = self.readDataNodeStates()
 
         # start heartbeats
-        # self.initHeartBeats()
+        self.initHeartBeats()
+
         # start the server listening for requests
         self.server.run('127.0.0.1',port)
 
     def sendHeartBeats(self):
-        response = requests.get('/')
-        if response['message'] == 'Awake':
-            self.datanode_states[response['id']].status = 1
-        else:
-            self.datanode_states[response['id']].status = 0
-        time.sleep(5)
-    
+        while True:
+            for i in range(len(self.datanodes)):
+                port = self.datanodes[i]
+                try:
+                    response = requests.get(f'http://localhost:{port}/').json()
+                    if response['message'] == 'Awake':
+                        self.datanode_states[response['id']-1].status = 1
+                    else:
+                        self.datanode_states[response['id']-1].status = 0
+
+                except Exception as e:
+                    self.datanode_states[i].status = 0
+                    continue
+
+            time.sleep(self.config['sync_period'])
+        
     def initHeartBeats(self):
         heartbeat = Thread(target=self.sendHeartBeats)
         # heartbeat.daemon = True
@@ -78,7 +87,6 @@ class NameNode :
             free_blocks = free_blocks // block_size
             newState = DataNodeState(i+1, self.datanodes[i], datanode_size, free_blocks, status=1)
             states.append(newState)
-        print(states)    
         return states
 
     
@@ -92,8 +100,6 @@ class NameNode :
         nodes = []
         for block in range(int(num_blocks)):
             available_dn = set(dn for dn in self.datanode_states if dn.status==1)
-            for dn in available_dn:
-                print(dn.id, dn.status, dn.free_blocks)
 
             for i in range(r):
                 flag = True
@@ -138,7 +144,6 @@ class NameNode :
             """
             req_data=request.json
             fspath = req_data.get("path_in_fs")
-            print(fspath)
             num_blocks = int(req_data.get('size'))
             filepath = req_data.get('filepath')
             filename = os.path.basename(filepath)
@@ -147,14 +152,12 @@ class NameNode :
             if not fspath.startswith(self.config['fs_path']):
                 fspath = os.path.join(self.config["fs_path"], fspath)
             
-            print(fspath)
 
             actual_path = os.path.join(self.path, fspath, filename)
 
             if not os.path.exists(os.path.dirname(actual_path)):
                 return json.dumps({"error":"FSPath Not Found", "code":"1"})
 
-            print(actual_path)
             if os.path.exists(actual_path):
                 return json.dumps({"error":"file with same name already exists", "code":"2"})
             
@@ -164,7 +167,7 @@ class NameNode :
                 return json.dumps({"error":"Not enough memory!", "code":"3"})
 
             newfile = open(actual_path, 'w')
-            
+
             count = 1    
             for d_id, block_idx in blocks:
                 print(d_id, hash(fspath+str(block_idx)), file=newfile, sep=",", end=" ")
