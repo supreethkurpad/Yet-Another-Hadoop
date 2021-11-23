@@ -299,6 +299,8 @@ class NameNode :
             """
             req_data=request.json
             fspath = req_data.get('fspath')
+            if not fspath.startswtih(self.config['fs_path']):
+                fspath = os.path.join(self.config['fs_path'], fspath)
             actual_path = os.path.join(self.path, fspath)
 
             if not os.path.exists(actual_path):
