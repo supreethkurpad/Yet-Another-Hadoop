@@ -47,7 +47,9 @@ class NameNode :
         
         # gather state of datanodes
         self.datanode_states = self.readDataNodeStates()
-
+        
+        self.snn_port = self.config['snn_port']
+        
         # start heartbeats
         if self.primary:
             self.initHeartBeats()
@@ -55,15 +57,12 @@ class NameNode :
         # start the server listening for requests
         self.server.run('127.0.0.1',port)
 
-
     def switchToPrimary(self):
         """
         Marks the calling instance of namenode as the primary namenode
         """
         self.primary = True
         self.initHeartBeats()
-
-
 
     def sendHeartBeats(self):
         """
@@ -96,6 +95,8 @@ class NameNode :
             res = requests.get(f'http://localhost:{pnn_port}/').json()
             if res['message'] != 'Awake':
                 self.initiateFailover()
+            else:
+                pass
 
     def initiateFailover(self):
         s_namenode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'namenode.py')
