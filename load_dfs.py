@@ -1,33 +1,19 @@
 import subprocess
 import json
-import random
-import socket
 import os
 from sys import argv, stdout
 from functools import reduce 
 import pickle
-from contextlib import closing
 import shutil
+from pathlib import Path
+
+from src.utils.port_finder import getPortNumbers
+from src.utils.make_import_path import make_import_path
 
 DEFAULT_PORT=5000
 NULL_FILE=os.devnull
 HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
-
-def getPortNumbers(n, blacklist=[]) -> list:
-    ports = []
-    while n:
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as a_socket:
-            a_socket.bind(('', 0))
-            a_socket.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-            port = a_socket.getsockname()[1]
-            if port not in blacklist:
-                ports.append(port)
-            else:
-                continue
-            n-=1
-        
-    return ports    
-
+  
 def delete(folder):
     for filename in os.listdir(folder):
         file_path = os.path.join(folder, filename)
@@ -91,7 +77,7 @@ if __name__ == '__main__':
     config['pnn_port'] = DEFAULT_PORT
     config['snn_port'] = snn_port
     
-    namenode = os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')
+    namenode = make_import_path(os.path.relpath(os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')))
     namenode_args = [DEFAULT_PORT, ports, config_path, True]
 
     # store the args as pickle objects at a path for namenode to parse
@@ -103,14 +89,15 @@ if __name__ == '__main__':
     config['path_to_argpath']=argpath
        
     # start namenode process
-    namenode_process = subprocess.Popen(['python3', namenode, argpath])
+  
+    namenode_process = subprocess.Popen(['python3', "-m", namenode, argpath])
     # log pid to tmp file so stop-all can terminate it.
     with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'w+') as f:
        print(namenode_process.pid, file=f)
 
     # Repeating Process for Secondary NameNode
-    s_namenode = os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')
-    s_namenode_args = [snn_port, ports, config_path, True]
+    s_namenode = make_import_path(os.path.relpath(os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')))
+    s_namenode_args = [snn_port, ports, config_path, True, 'Namenode 2']
     s_argpath = os.path.join(HADOOP_HOME, 'tmp', 's_namenode_arg.pickle')
     with open(s_argpath, 'wb') as f:
         pickle.dump(s_namenode_args, file=f)
@@ -119,11 +106,10 @@ if __name__ == '__main__':
     config['path_to_s_argpath']=argpath
     
     # start namenode process
-    s_namenode_process = subprocess.Popen(['python3', namenode, s_argpath])
+    s_namenode_process = subprocess.Popen(['python3', '-m', s_namenode, s_argpath])
     # log pid to tmp file so stop-all can terminate it.
     with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'a') as f:
        print(s_namenode_process.pid, file=f)
-
 
     # Starting datanodes
     numD = config['num_datanodes']

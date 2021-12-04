@@ -6,6 +6,7 @@ import urllib.request
 import math
 from time import sleep
 
+from termcolor import colored
 
 HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
 
@@ -17,6 +18,8 @@ class Client:
         self.ports=self.getports()
         self.p_port=self.config['pnn_port']
         self.params=None
+        self.pnn_port = self.config['pnn_port']
+        self.snn_port = self.config['snn_port']
 
     def getconfig(self):
         config = {}
@@ -84,7 +87,7 @@ class Client:
             return
 
         file_size = os.path.getsize(self.params[1])
-        res = self.post(self.p_port,self.params[0],{"filepath":self.params[1],"path_in_fs":self.params[2],\
+        res = self.post(self.pnn_port,self.params[0],{"filepath":self.params[1],"path_in_fs":self.params[2],\
             "size":math.ceil(file_size/self.config['block_size'])}) 
         res=res.json()
         if(res['code']!='0'):
@@ -119,14 +122,14 @@ class Client:
 
             
     def delblocks(self,metadata):
-        dnodes=metadata.split('\n')
+        dnodes=metadata.strip().split('\n')
         for dn in dnodes:
             dn=dn.rstrip()
             if(dn!=""):
                 dnode_dict = dict(map(lambda x: x.split(','), dn.split(' ')))
                 req_data={}
                 dns = list(dnode_dict.keys())
-                for i in range(self.config['replication_factor']):
+                for i in range(int(self.config['replication_factor'])):
                     req_data[self.ports[int(dns[i])-1]] = dnode_dict[dns[i]]
 
                 final_res=self.post(self.ports[int(dns[0])-1],'delete',req_data)
@@ -137,15 +140,21 @@ class Client:
     def startReqHandler(self):
         while True:
         
-            req=input("yah>")
+            req=input(colored("\nyah> ", "cyan"))
             #put file /dir 
-            self.params=req.split(" ")
+            self.params=req.strip().split(" ")
 
             try:
+                if(self.params[0]=='exit'):
+                    break
+                        
                 if(self.params[0]=='put'):
-                    if len(self.params)!=3:
+                    if len(self.params)<2:
                         print("Incorrect number of parameters, enter file path and hdfs dir")
                         continue
+                    if len(self.params) == 2:
+                        self.params.append(self.config['fs_path'])
+
                     self.sendputRequest()
                     
 
@@ -153,7 +162,7 @@ class Client:
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name of one directory')
                         continue
-                    res=self.post(self.p_port, self.params[0], {'fspath':self.params[1]})
+                    res=self.post(self.pnn_port, self.params[0], {'fspath':self.params[1]})
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
@@ -162,11 +171,10 @@ class Client:
                 
                 # Delete file or directory
                 elif(self.params[0]=='rm'): 
-                    print(self.params[0])
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name file or directory')
                         continue
-                    res=self.post(self.p_port, self.params[0], {'fspath':self.params[1]})
+                    res=self.post(self.pnn_port, self.params[0], {'fspath':self.params[1]})
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
@@ -178,7 +186,7 @@ class Client:
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name of one directory')
                         continue
-                    res=self.post(self.p_port, self.params[0], {'fspath':self.params[1]})
+                    res=self.post(self.pnn_port, self.params[0], {'fspath':self.params[1]})
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
@@ -188,21 +196,25 @@ class Client:
                 elif(self.params[0]=='ls'):
                     res=None
                     req_param=self.config['fs_path']
+
+                    if len(self.params) == 1:
+                        self.params.append(self.config['fs_path'])
+
                     if(len(self.params)==2):
                         req_param=self.params[1]
-                    res=self.post(self.p_port,self.params[0],{"fspath":req_param})
+
+                    res=self.post(self.pnn_port,self.params[0],{"fspath":req_param})
                     res=res.json()
                     if (res['code']!='0'):
                         print(res['error'])
                         continue
-                    print("files are:")
                     print(res['data'])
 
                 elif(self.params[0]=='cat'):
                     if len(self.params)!=2:
                         print("enter command correctly")
                         continue
-                    res=self.post(self.p_port,self.params[0],{"fspath":self.params[1]})
+                    res=self.post(self.pnn_port,self.params[0],{"fspath":self.params[1]})
                     #expects response as file
                     self.getfileblocks(res)
 
