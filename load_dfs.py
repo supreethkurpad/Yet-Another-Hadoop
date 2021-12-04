@@ -6,13 +6,18 @@ from functools import reduce
 import pickle
 import shutil
 from pathlib import Path
+import sys
+
+HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
+
+if HADOOP_HOME not in sys.path:
+    sys.path.insert(0, HADOOP_HOME)
 
 from src.utils.port_finder import getPortNumbers
 from src.utils.make_import_path import make_import_path
 
 DEFAULT_PORT=5000
 NULL_FILE=os.devnull
-HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
   
 def delete(folder):
     for filename in os.listdir(folder):
@@ -73,12 +78,12 @@ if __name__ == '__main__':
             print(i,file=f)
 
     # assign ports to namenodes
-    snn_port = getPortNumbers(1, blacklist=ports)[0]
-    config['pnn_port'] = DEFAULT_PORT
+    pnn_port, snn_port = getPortNumbers(2, blacklist=ports)
+    config['pnn_port'] = pnn_port
     config['snn_port'] = snn_port
     
     namenode = make_import_path(os.path.relpath(os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')))
-    namenode_args = [DEFAULT_PORT, ports, config_path, True]
+    namenode_args = [pnn_port, ports, config_path, True]
 
     # store the args as pickle objects at a path for namenode to parse
     argpath = os.path.join(HADOOP_HOME, 'tmp', 'namenode_arg.pickle')
@@ -97,7 +102,7 @@ if __name__ == '__main__':
 
     # Repeating Process for Secondary NameNode
     s_namenode = make_import_path(os.path.relpath(os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')))
-    s_namenode_args = [snn_port, ports, config_path, True, 'Namenode 2']
+    s_namenode_args = [snn_port, ports, config_path, False, 'Namenode 2']
     s_argpath = os.path.join(HADOOP_HOME, 'tmp', 's_namenode_arg.pickle')
     with open(s_argpath, 'wb') as f:
         pickle.dump(s_namenode_args, file=f)

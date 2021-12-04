@@ -9,7 +9,7 @@ from time import sleep
 from termcolor import colored
 
 HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
-
+COLOR="red"
 
 class Client:
     def __init__(self,config_path):
@@ -140,7 +140,7 @@ class Client:
     def startReqHandler(self):
         while True:
         
-            req=input(colored("\nyah> ", "cyan"))
+            req=input(colored("\nyah> ", COLOR))
             #put file /dir 
             self.params=req.strip().split(" ")
 

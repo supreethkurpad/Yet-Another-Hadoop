@@ -9,7 +9,7 @@ def getPortNumbers(n, blacklist=[]) -> list:
             a_socket.bind(('', 0))
             a_socket.getsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             port = a_socket.getsockname()[1]
-            if port not in blacklist:
+            if port not in blacklist and port not in ports:
                 ports.append(port)
             else:
                 continue
