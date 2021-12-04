@@ -1,0 +1,4 @@
+put test.txt 
+rm test.txt 
+put test.txt
+rm test.txt

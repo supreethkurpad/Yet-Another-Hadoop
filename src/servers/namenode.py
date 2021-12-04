@@ -1,34 +1,38 @@
 from flask import Flask, jsonify, request
 from datetime import datetime 
 import json
-# from flask.logging import default_handler
 import os
 from sys import argv
 import pickle
-from state import DataNodeState
 from random import choice
 from threading import Thread
 import time
 import requests
-from hash import hash
+import subprocess
+from pathlib import Path
+
+from src.utils.state import DataNodeState
+from src.utils.hash import hash
+from src.utils.port_finder import getPortNumbers
+
 """
-Status codes:
+Status codes for yah operations:
 0: [OK]
 1: [Invalid fs path]
 2: [File already Exists]
 3: [Insufficient Memory in datanode]
 """
 
-
+HADOOP_HOME = os.environ['MYHADOOP_HOME']
 class NameNode :
-    def __init__(self, port, dn_ports=[], path_to_config=None, primary=True):
-        # init 
-        self.server = Flask(__name__)
+    def __init__(self, port, dn_ports=[], path_to_config=None, primary=True, _name='Namenode 1'):
+
+        self.server = Flask(_name)
         self.port = port 
         self.primary = primary
-        # self.server.logger.removeHandler(default_handler)
         self.datanodes = dn_ports
-        
+        self._name = _name
+
         # defines routes 
         self.initRequestHandler()
 
@@ -38,7 +42,6 @@ class NameNode :
 
         if primary:
             self.path = self.config['path_to_primary']
-
         else:
             self.path = self.config['path_to_secondary']
         
@@ -46,13 +49,28 @@ class NameNode :
         self.datanode_states = self.readDataNodeStates()
 
         # start heartbeats
-        self.initHeartBeats()
+        if self.primary:
+            self.initHeartBeats()
 
         # start the server listening for requests
         self.server.run('127.0.0.1',port)
 
+
+    def switchToPrimary(self):
+        """
+        Marks the calling instance of namenode as the primary namenode
+        """
+        self.primary = True
+        self.initHeartBeats()
+
+
+
     def sendHeartBeats(self):
-        while True:
+        """
+        Send heartbeat requests to the datanodes to check if they are alive
+        and update status accordingly.
+        """
+        while self.primary:
             for i in range(len(self.datanodes)):
                 port = self.datanodes[i]
                 try:
@@ -67,12 +85,43 @@ class NameNode :
                     continue
 
             time.sleep(self.config['sync_period'])
-        
+    
+    def snnHeartbeat(self):
+        """
+        If self is a secondary namenode, sends heartbeats to the primary namenode 
+        and in case of failure, take over as the new primary and starts a new secondary  
+        """
+        while not self.primary:
+            pnn_port = self.config['pnn_port']
+            res = requests.get(f'http://localhost:{pnn_port}/').json()
+            if res['message'] != 'Awake':
+                self.initiateFailover()
+
+    def initiateFailover(self):
+        s_namenode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'namenode.py')
+        snn_port = getPortNumbers(1)
+        s_namenode_args = [snn_port, self.dn_ports, self.config_path, True, f'Namenode {int(self._name.split()[-1])+1}']
+        s_argpath = os.path.join(HADOOP_HOME, 'tmp', 's_namenode_arg.pickle')
+        with open(s_argpath, 'wb') as f:
+            pickle.dump(s_namenode_args, file=f)
+
+        self.config['path_to_s_argpath']=argpath
+        new_nn = subprocess.Popen(['python3', s_namenode, s_argpath])
+    
+        with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'a') as f:
+           print(new_nn.pid, file=f)
+
+        self.switchToPrimary()
+
     def initHeartBeats(self):
-        heartbeat = Thread(target=self.sendHeartBeats)
-        # heartbeat.daemon = True
-        heartbeat.start()
-        
+        if self.primary:
+            self.heartbeat = Thread(target=self.sendHeartBeats)
+            self.heartbeat.start()
+
+        else:
+            self.snn_heartbeat = Thread(target=self.snnHeartbeat)
+            self.snn_heartbeat.start()
+
     def readDataNodeStates(self):
         """
         get all details about datanode such as size, available space, etc (status:0)
@@ -89,7 +138,6 @@ class NameNode :
             states.append(newState)
         return states
 
-    
     def getBlocks(self, num_blocks, r):
         """
         Find r datanodes which are not full. 
@@ -148,13 +196,13 @@ class NameNode :
             filepath = req_data.get('filepath')
             filename = os.path.basename(filepath)
             
+            fspath = os.path.join(fspath, filename)
 
             if not fspath.startswith(self.config['fs_path']):
                 fspath = os.path.join(self.config["fs_path"], fspath)
             
 
-            actual_path = os.path.join(self.path, fspath, filename)
-
+            actual_path = os.path.join(self.path, fspath)
             if not os.path.exists(os.path.dirname(actual_path)):
                 return json.dumps({"error":"FSPath Not Found", "code":"1"})
 
@@ -282,9 +330,14 @@ class NameNode :
             """
             req_data=request.json
             fspath = req_data.get('fspath')
+
+            if not fspath.startswith(Path(self.config['fs_path']).stem):
+                fspath = os.path.join(self.config['fs_path'], fspath)
+
             actual_path = os.path.join(self.path, fspath)
+            print(actual_path)
             if not os.path.exists(actual_path):
-                return json.dumps({
+                return json.dumps({ 
                     "code":"1",
                     "error":"No such File/Directory"
                 })
@@ -321,9 +374,10 @@ class NameNode :
             with open(actual_path, 'r') as f:
                 metadata = f.read()
             
-            for line in metadata.split('\n'):
-                id, _ = line.split(',')
-                self.datanode_states[id-1].free_blocks += 1
+            for line in metadata.strip().split('\n'):
+                for tup in line.strip().split(' '):
+                    id, _ = tup.split(',')
+                    self.datanode_states[int(id)-1].free_blocks += 1
 
             os.remove(actual_path)
             return json.dumps({
@@ -334,10 +388,9 @@ class NameNode :
         @self.server.route('/')
         def heartbeat():
             if self.primary:
-                return jsonify(port=self.port, timestamp=datetime.now())
+                return jsonify(message="Awake", port=self.port, timestamp=datetime.now())
             else:
-                # TODO
-                pass
+                return jsonify(message="Awake")
 
 
 if __name__ == "__main__":
