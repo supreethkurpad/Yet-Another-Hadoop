@@ -11,11 +11,14 @@ import time
 import requests
 import subprocess
 from pathlib import Path
+from shutil import copyfile, copytree
 
 from src.servers.edit_log import LogWriter, LogReader, Operation
 from src.utils.state import DataNodeState
 from src.utils.hash import hash
 from src.utils.port_finder import getPortNumbers
+from src.utils.make_import_path import make_import_path
+
 
 """
 Status codes for yah operations:
@@ -123,7 +126,7 @@ class NameNode :
     def initiateFailover(self):
         print("Namenode Down! Trying to recover data and moving to Secondary Namenode")
         s_namenode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'namenode.py')
-        snn_port = getPortNumbers(1, blacklist=self.datanodes+[self.port])
+        snn_port = getPortNumbers(1, blacklist=self.datanodes+[self.port])[0]
         self.snn_port = snn_port
         s_namenode_args = [snn_port, self.datanodes, self.path_to_config, False, f'Namenode {int(self._name.split()[-1])+1}']
         s_argpath = os.path.join(HADOOP_HOME, 'tmp', 's_namenode_arg.pickle')
@@ -132,13 +135,15 @@ class NameNode :
 
         self.config['path_to_s_argpath']=s_argpath
         self.config['path_to_primary'] = self.path
-        self.config['path_to_secondary'] = os.path.join(self.config['path_to_namenodes'], s_namenode_args[4])
+        self.config['path_to_secondary'] = os.path.join(self.config['path_to_namenodes'], s_namenode_args[4].replace(" ", "").lower())
 
-        if not os.path.exists(self.config['path_to_secondary']):
-            os.mkdir(self.config['path_to_secondary'])
-            
-        new_nn = subprocess.Popen(['python3', "-m", s_namenode, s_argpath])
-    
+        src = self.config['path_to_primary']
+        dest = self.config['path_to_secondary']
+        print(src, dest)
+        copytree(src, dest)
+
+        new_nn = subprocess.Popen(['python3', "-m", "src.servers.namenode", s_argpath])
+
         with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'a') as f:
            print(new_nn.pid, file=f)
         
