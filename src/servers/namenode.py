@@ -11,6 +11,7 @@ import requests
 import subprocess
 from pathlib import Path
 
+from src.servers.edit_log import LogWriter, LogReader, Operation
 from src.utils.state import DataNodeState
 from src.utils.hash import hash
 from src.utils.port_finder import getPortNumbers
@@ -24,6 +25,7 @@ Status codes for yah operations:
 """
 
 HADOOP_HOME = os.environ['MYHADOOP_HOME']
+LOG_FILE='edits.txt'
 class NameNode :
     def __init__(self, port, dn_ports=[], path_to_config=None, primary=True, _name='Namenode 1'):
 
@@ -32,6 +34,7 @@ class NameNode :
         self.primary = primary
         self.datanodes = dn_ports
         self._name = _name
+        self.log_file = os.path.join(self.config['namenode_log_path'], LOG_FILE)
 
         # defines routes 
         self.initRequestHandler()
@@ -42,13 +45,21 @@ class NameNode :
 
         if primary:
             self.path = self.config['path_to_primary']
+            self.edits = []
+            self.snn_port = self.config['snn_port']
+
         else:
             self.path = self.config['path_to_secondary']
         
+        # creates a log writer/reader
+        if self.primary:
+            self.logWriter = LogWriter(self.path)
+        else:
+            self.logReader = LogReader(self.path)
+
         # gather state of datanodes
         self.datanode_states = self.readDataNodeStates()
         
-        self.snn_port = self.config['snn_port']
         
         # start heartbeats
         if self.primary:
@@ -63,6 +74,7 @@ class NameNode :
         """
         self.primary = True
         self.initHeartBeats()
+        self.logWriter = LogWriter(self.path)
 
     def sendHeartBeats(self):
         """
@@ -82,7 +94,9 @@ class NameNode :
                 except Exception as e:
                     self.datanode_states[i].status = 0
                     continue
-
+            # write edits to log file
+            self.logWriter.write_logs(self.edits)
+            self.edits = []
             time.sleep(self.config['sync_period'])
     
     def snnHeartbeat(self):
@@ -92,15 +106,20 @@ class NameNode :
         """
         while not self.primary:
             pnn_port = self.config['pnn_port']
-            res = requests.get(f'http://localhost:{pnn_port}/').json()
-            if res['message'] != 'Awake':
+            try:
+                res = requests.get(f'http://localhost:{pnn_port}/').json()
+                if res['message'] == 'Awake':
+                    log_file = res[log_file]
+                    self.logReader.read_log(log_file)
+            except Exception as e:
                 self.initiateFailover()
-            else:
-                pass
+
+            time.sleep(self.config['sync_period'])
 
     def initiateFailover(self):
         s_namenode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'namenode.py')
         snn_port = getPortNumbers(1)
+        self.snn_port = snn_port
         s_namenode_args = [snn_port, self.dn_ports, self.config_path, True, f'Namenode {int(self._name.split()[-1])+1}']
         s_argpath = os.path.join(HADOOP_HOME, 'tmp', 's_namenode_arg.pickle')
         with open(s_argpath, 'wb') as f:
@@ -228,10 +247,15 @@ class NameNode :
             newfile.close()
 
             with open(actual_path, 'r') as f:
-                return json.dumps({
-                    "data":f.read(),
-                    "code":"0"
-                })
+                data = f.read()
+
+            if self.primary:
+                self.edits.append(Operation('put', fspath, data))
+
+            return json.dumps({
+                "data":data,
+                "code":"0"
+            })
 
         @self.server.route('/cat',methods=['POST'])
         def cat():
@@ -278,6 +302,9 @@ class NameNode :
                     "code":"1"
                 })
 
+            if self.primary:
+                self.edits.append(Operation('rmdir', fspath))
+
             return json.dumps({
                 "code":"0",
                 "msg":"deleted directory"
@@ -307,6 +334,9 @@ class NameNode :
                     "error":"Invalid path to directory",
                     "code":"1"
                 })
+
+            if self.primary:
+                self.edits.append(Operation('mkdir', fspath))
 
             return json.dumps({
                 "code":"0",
@@ -380,6 +410,9 @@ class NameNode :
                     id, _ = tup.split(',')
                     self.datanode_states[int(id)-1].free_blocks += 1
 
+            if self.primary:
+                self.edits.append(Operation('rmdir', fspath))
+
             os.remove(actual_path)
             return json.dumps({
                 "data":metadata,
@@ -389,7 +422,10 @@ class NameNode :
         @self.server.route('/')
         def heartbeat():
             if self.primary:
-                return jsonify(message="Awake", port=self.port, timestamp=datetime.now())
+                return jsonify(message="Awake",
+                 port=self.port,
+                 timestamp=datetime.now(),
+                 log_file=self.log_file)
             else:
                 return jsonify(message="Awake")
 
