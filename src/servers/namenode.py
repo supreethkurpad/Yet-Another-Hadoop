@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, request
+from posixpath import dirname
+from flask import Flask, config, jsonify, request
 from datetime import datetime 
 import json
 import os
@@ -34,7 +35,7 @@ class NameNode :
         self.primary = primary
         self.datanodes = dn_ports
         self._name = _name
-        self.log_file = os.path.join(self.config['namenode_log_path'], LOG_FILE)
+        self.path_to_config = path_to_config
 
         # defines routes 
         self.initRequestHandler()
@@ -51,19 +52,21 @@ class NameNode :
         else:
             self.path = self.config['path_to_secondary']
         
+        self.log_file = os.path.join(self.config['namenode_log_path'], LOG_FILE)
+        with open(self.log_file, 'w') as f:
+            f.write("")
+
         # creates a log writer/reader
         if self.primary:
-            self.logWriter = LogWriter(self.path)
+            self.logWriter = LogWriter(self.log_file)
         else:
             self.logReader = LogReader(self.path)
 
         # gather state of datanodes
         self.datanode_states = self.readDataNodeStates()
-        
-        
+            
         # start heartbeats
-        if self.primary:
-            self.initHeartBeats()
+        self.initHeartBeats()
 
         # start the server listening for requests
         self.server.run('127.0.0.1',port)
@@ -74,7 +77,9 @@ class NameNode :
         """
         self.primary = True
         self.initHeartBeats()
-        self.logWriter = LogWriter(self.path)
+        self.logWriter = LogWriter(self.log_file)
+        self.edits = []
+        print("Failover Mechanism Successfull. Some data may have been lost as edit logs are not instantaneous")
 
     def sendHeartBeats(self):
         """
@@ -105,32 +110,43 @@ class NameNode :
         and in case of failure, take over as the new primary and starts a new secondary  
         """
         while not self.primary:
+            time.sleep(self.config['sync_period'])
             pnn_port = self.config['pnn_port']
             try:
                 res = requests.get(f'http://localhost:{pnn_port}/').json()
                 if res['message'] == 'Awake':
-                    log_file = res[log_file]
+                    log_file = res['log_file']
                     self.logReader.read_log(log_file)
             except Exception as e:
                 self.initiateFailover()
 
-            time.sleep(self.config['sync_period'])
-
     def initiateFailover(self):
+        print("Namenode Down! Trying to recover data and moving to Secondary Namenode")
         s_namenode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'namenode.py')
-        snn_port = getPortNumbers(1)
+        snn_port = getPortNumbers(1, blacklist=self.datanodes+[self.port])
         self.snn_port = snn_port
-        s_namenode_args = [snn_port, self.dn_ports, self.config_path, True, f'Namenode {int(self._name.split()[-1])+1}']
+        s_namenode_args = [snn_port, self.datanodes, self.path_to_config, False, f'Namenode {int(self._name.split()[-1])+1}']
         s_argpath = os.path.join(HADOOP_HOME, 'tmp', 's_namenode_arg.pickle')
         with open(s_argpath, 'wb') as f:
             pickle.dump(s_namenode_args, file=f)
 
-        self.config['path_to_s_argpath']=argpath
-        new_nn = subprocess.Popen(['python3', s_namenode, s_argpath])
+        self.config['path_to_s_argpath']=s_argpath
+        self.config['path_to_primary'] = self.path
+        self.config['path_to_secondary'] = os.path.join(self.config['path_to_namenodes'], s_namenode_args[4])
+
+        if not os.path.exists(self.config['path_to_secondary']):
+            os.mkdir(self.config['path_to_secondary'])
+            
+        new_nn = subprocess.Popen(['python3', "-m", s_namenode, s_argpath])
     
         with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'a') as f:
            print(new_nn.pid, file=f)
-
+        
+        self.config['pnn_port'] = self.port
+        self.config['snn_port'] = self.snn_port
+        with open(self.path_to_config, 'w') as f:
+            json.dump(self.config, f)
+        
         self.switchToPrimary()
 
     def initHeartBeats(self):
@@ -366,7 +382,6 @@ class NameNode :
                 fspath = os.path.join(self.config['fs_path'], fspath)
 
             actual_path = os.path.join(self.path, fspath)
-            print(actual_path)
             if not os.path.exists(actual_path):
                 return json.dumps({ 
                     "code":"1",
@@ -411,7 +426,7 @@ class NameNode :
                     self.datanode_states[int(id)-1].free_blocks += 1
 
             if self.primary:
-                self.edits.append(Operation('rmdir', fspath))
+                self.edits.append(Operation('rm', fspath))
 
             os.remove(actual_path)
             return json.dumps({

@@ -59,7 +59,6 @@ class LogReader:
             line = line.strip()
             self.apply_op(line)
         
-        # os.truncate(path, 0)
 
     def apply_op(self, log):
         
@@ -96,22 +95,22 @@ class LogWriter:
     - Convert them into a log file format 
     - Write to given log file
     """
-    def __init__(self, ops) -> None:
-        self.ops = ops
+    def __init__(self, path) -> None:
+        self.path = path
     
-    def writeLog(self, path):
-        with open(path, 'w') as f:
-            for op in self.ops:
+    def write_logs(self, ops):
+        with open(self.path, 'w') as f:
+            for op in ops:
                 f.write(op.to_string())
     
+if __name__ == '__main__':
+    # Sample Usage
+    op1 = Operation('mkdir', 'test')
+    op2 = Operation('put', 'test/test1.txt', 'Hello World')
+    op3 = Operation('rm', 'test/test1.txt')
+    op4 = Operation('rmdir', 'test')
+    lw = LogWriter([op1, op2, op3, op4])
+    lw.write_logs('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/logs/edits.txt')
 
-# Sample Usage
-op1 = Operation('mkdir', 'test')
-op2 = Operation('put', 'test/test1.txt', 'Hello World')
-op3 = Operation('rm', 'test/test1.txt')
-op4 = Operation('rmdir', 'test')
-lw = LogWriter([op1, op2, op3, op4])
-lw.writeLog('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/logs/edits.txt')
-
-lr = LogReader('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/namenode2')
-lr.read_log('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/logs/edits.txt')
+    lr = LogReader('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/namenode2')
+    lr.read_log('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/logs/edits.txt')
