@@ -28,6 +28,11 @@ class Operation:
         
         self.data = data
         self.path = path
+    
+    def to_string(self):
+        data_string = f"\n{self.data}\n" if self.data != None else "\n"
+        log_string = f"{self.time_stamp} {self.target} {self.op_type} {self.path}{data_string}{DELIM}\n"
+        return log_string 
 
 
 class LogReader:
@@ -91,9 +96,22 @@ class LogWriter:
     - Convert them into a log file format 
     - Write to given log file
     """
+    def __init__(self, ops) -> None:
+        self.ops = ops
+    
+    def writeLog(self, path):
+        with open(path, 'w') as f:
+            for op in self.ops:
+                f.write(op.to_string())
+    
 
-
-    pass
+# Sample Usage
+op1 = Operation('mkdir', 'test')
+op2 = Operation('put', 'test/test1.txt', 'Hello World')
+op3 = Operation('rm', 'test/test1.txt')
+op4 = Operation('rmdir', 'test')
+lw = LogWriter([op1, op2, op3, op4])
+lw.writeLog('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/logs/edits.txt')
 
 lr = LogReader('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/namenode2')
 lr.read_log('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/logs/edits.txt')
