@@ -18,7 +18,6 @@ class Client:
         self.ports=self.getports()
         self.p_port=self.config['pnn_port']
         self.params=None
-        self.pnn_port = self.config['pnn_port']
         self.snn_port = self.config['snn_port']
 
     def getconfig(self):
@@ -45,16 +44,16 @@ class Client:
                 except Exception as e:
                         print(e)
         except:
-            print("in else")
-            sleep(self.config['sync_period'])
-            self.config=self.getconfig()
-            self.p_port=self.config['pnn_port']
-            if((requests.head('http://localhost:'+str(self.p_port))).status_code==200):
-                try:
-                    res=requests.post('http://localhost:'+str(self.p_port)+'/'+str(cmd),json=data) 
-                    return res
-                except Exception as e:
-                        print(e)
+            while True:
+                sleep(self.config['sync_period'])
+                self.config=self.getconfig()
+                self.p_port=self.config['pnn_port']
+                if((requests.head('http://localhost:'+str(self.p_port))).status_code==200):
+                    try:
+                        res=requests.post('http://localhost:'+str(self.p_port)+'/'+str(cmd),json=data) 
+                        return res
+                    except Exception as e:
+                            print(e)
 
 
 
@@ -87,7 +86,7 @@ class Client:
             return
 
         file_size = os.path.getsize(self.params[1])
-        res = self.post(self.pnn_port,self.params[0],{"filepath":self.params[1],"path_in_fs":self.params[2],\
+        res = self.post(self.p_port,self.params[0],{"filepath":self.params[1],"path_in_fs":self.params[2],\
             "size":math.ceil(file_size/self.config['block_size'])}) 
         res=res.json()
         if(res['code']!='0'):
@@ -162,7 +161,7 @@ class Client:
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name of one directory')
                         continue
-                    res=self.post(self.pnn_port, self.params[0], {'fspath':self.params[1]})
+                    res=self.post(self.p_port, self.params[0], {'fspath':self.params[1]})
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
@@ -174,7 +173,7 @@ class Client:
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name file or directory')
                         continue
-                    res=self.post(self.pnn_port, self.params[0], {'fspath':self.params[1]})
+                    res=self.post(self.p_port, self.params[0], {'fspath':self.params[1]})
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
@@ -186,7 +185,7 @@ class Client:
                     if len(self.params)!=2:
                         print('Incorrect number of parameters, enter name of one directory')
                         continue
-                    res=self.post(self.pnn_port, self.params[0], {'fspath':self.params[1]})
+                    res=self.post(self.p_port, self.params[0], {'fspath':self.params[1]})
                     res=res.json()
                     if(res['code']!='0'):
                         print(res['error'])
@@ -203,7 +202,7 @@ class Client:
                     if(len(self.params)==2):
                         req_param=self.params[1]
 
-                    res=self.post(self.pnn_port,self.params[0],{"fspath":req_param})
+                    res=self.post(self.p_port,self.params[0],{"fspath":req_param})
                     res=res.json()
                     if (res['code']!='0'):
                         print(res['error'])
@@ -214,7 +213,7 @@ class Client:
                     if len(self.params)!=2:
                         print("enter command correctly")
                         continue
-                    res=self.post(self.pnn_port,self.params[0],{"fspath":self.params[1]})
+                    res=self.post(self.p_port,self.params[0],{"fspath":self.params[1]})
                     #expects response as file
                     self.getfileblocks(res)
 

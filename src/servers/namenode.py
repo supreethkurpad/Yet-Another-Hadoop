@@ -31,7 +31,7 @@ Status codes for yah operations:
 HADOOP_HOME = os.environ['MYHADOOP_HOME']
 LOG_FILE='edits.txt'
 class NameNode :
-    def __init__(self, port, dn_ports=[], path_to_config=None, primary=True, _name='Namenode 1'):
+    def __init__(self, port, dn_ports=[], path_to_config=None, primary=True, _name='namenode_1'):
 
         self.server = Flask(_name)
         self.port = port 
@@ -81,6 +81,7 @@ class NameNode :
         self.primary = True
         self.initHeartBeats()
         self.logWriter = LogWriter(self.log_file)
+        del self.logReader
         self.edits = []
         print("Failover Mechanism Successfull. Some data may have been lost as edit logs are not instantaneous")
 
@@ -128,7 +129,7 @@ class NameNode :
         s_namenode = os.path.join(HADOOP_HOME, 'src' , 'servers', 'namenode.py')
         snn_port = getPortNumbers(1, blacklist=self.datanodes+[self.port])[0]
         self.snn_port = snn_port
-        s_namenode_args = [snn_port, self.datanodes, self.path_to_config, False, f'Namenode {int(self._name.split()[-1])+1}']
+        s_namenode_args = [snn_port, self.datanodes, self.path_to_config, False, f'namenode_{int(self._name.split("_")[-1])+1}']
         s_argpath = os.path.join(HADOOP_HOME, 'tmp', 's_namenode_arg.pickle')
         with open(s_argpath, 'wb') as f:
             pickle.dump(s_namenode_args, file=f)

@@ -83,7 +83,8 @@ if __name__ == '__main__':
     config['snn_port'] = snn_port
     
     namenode = make_import_path(os.path.relpath(os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')))
-    namenode_args = [pnn_port, ports, config_path, True]
+    namenode_name = os.path.basename(config['path_to_primary'])
+    namenode_args = [pnn_port, ports, config_path, True, namenode_name]
 
     # store the args as pickle objects at a path for namenode to parse
     argpath = os.path.join(HADOOP_HOME, 'tmp', 'namenode_arg.pickle')
@@ -102,7 +103,8 @@ if __name__ == '__main__':
 
     # Repeating Process for Secondary NameNode
     s_namenode = make_import_path(os.path.relpath(os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')))
-    s_namenode_args = [snn_port, ports, config_path, False, 'Namenode 2']
+    s_namenode_name = os.path.basename(config['path_to_secondary'])
+    s_namenode_args = [snn_port, ports, config_path, False, s_namenode_name]
     s_argpath = os.path.join(HADOOP_HOME, 'tmp', 's_namenode_arg.pickle')
     with open(s_argpath, 'wb') as f:
         pickle.dump(s_namenode_args, file=f)
