@@ -46,7 +46,7 @@ class Client:
                         print(e)
         except:
             print("in else")
-            sleep(15)
+            sleep(self.config['sync_period'])
             self.config=self.getconfig()
             self.p_port=self.config['pnn_port']
             if((requests.head('http://localhost:'+str(self.p_port))).status_code==200):
