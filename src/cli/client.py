@@ -110,14 +110,17 @@ class Client:
             if(dn!=""):
                 dnode_dict = dict(map(lambda x: x.split(','), dn.split(' ')))
                 for p in dnode_dict.keys():
-                    data=requests.get('http://localhost:'+str(self.ports[int(p)-1])+'/read/'+str(dnode_dict[p]))
-                    d=data.json()
-                    if(data is None):
+                    try:
+                        data=requests.get('http://localhost:'+str(self.ports[int(p)-1])+'/read/'+str(dnode_dict[p]))
+                        d=data.json()
+                        if(data is None):
+                            print("datanode down")
+                            return
+                        else:
+                            print(d['data'])
+                            break
+                    except:
                         print("datanode down")
-                        return
-                    else:
-                        print(d['data'])
-                        break
 
             
     def delblocks(self,metadata):
