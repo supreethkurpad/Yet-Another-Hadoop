@@ -1,7 +1,7 @@
 import subprocess
 import json
 import os
-from sys import argv, stdout
+from sys import argv, stdin, stdout
 from functools import reduce 
 import pickle
 import shutil
@@ -43,6 +43,10 @@ def prompt(config):
     else:
         exit(0)
 
+
+def dispConfig(config):
+    print(config)
+
 if __name__ == '__main__':
     
 
@@ -64,14 +68,21 @@ if __name__ == '__main__':
 
     config["num_loads"]+=1
 
+    dispConfig(config)
+
     with open(os.path.join(HADOOP_HOME, 'logs', 'previous_config.json'), 'w') as f:
         json.dump(config, f)
 
     # set up logging paths. writes to /dev/null by default 
-    #DN_LOG_FILE = config.get('datanode_log_path', NULL_FILE)
-    #NN_LOG_FILE = config.get('namenode_log_path', NULL_FILE)
-    DN_LOG_FILE =NULL_FILE
-    NN_LOG_FILE =NULL_FILE
+    DN_LOG_FILE = config.get('datanode_log_path', NULL_FILE)
+    NN_LOG_FILE = config.get('namenode_log_path', NULL_FILE)
+
+    if DN_LOG_FILE is not NULL_FILE:
+        DN_LOG_FILE = os.path.join(DN_LOG_FILE, 'logs.txt')
+
+    if NN_LOG_FILE is not NULL_FILE:
+        NN_LOG_FILE = os.path.join(NN_LOG_FILE, 'logs.txt')
+
     NN_LOG_FILE = open(NN_LOG_FILE, 'w')
     DN_LOG_FILE = open(DN_LOG_FILE, 'w')
 
@@ -101,7 +112,7 @@ if __name__ == '__main__':
        
     # start namenode process
   
-    namenode_process = subprocess.Popen(['python3', "-m", namenode, argpath])
+    namenode_process = subprocess.Popen(['python3', "-m", namenode, argpath], stdout=NN_LOG_FILE, stderr=NN_LOG_FILE)
     # log pid to tmp file so stop-all can terminate it.
     with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'w+') as f:
        print(namenode_process.pid, file=f)
@@ -118,7 +129,7 @@ if __name__ == '__main__':
     config['path_to_s_argpath']=argpath
     
     # start namenode process
-    s_namenode_process = subprocess.Popen(['python3', '-m', s_namenode, s_argpath])
+    s_namenode_process = subprocess.Popen(['python3', '-m', s_namenode, s_argpath], stdout=NN_LOG_FILE, stderr=NN_LOG_FILE)
     # log pid to tmp file so stop-all can terminate it.
     with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'a') as f:
        print(s_namenode_process.pid, file=f)
@@ -135,12 +146,11 @@ if __name__ == '__main__':
     
     for i in range(numD):
         pass
-        datanode_process = subprocess.Popen(['python3', datanode, str(i+1), str(ports[i]), str(config['block_size'])])
+        datanode_process = subprocess.Popen(['python3', datanode, str(i+1), str(ports[i]), str(config['block_size'])], stdout=DN_LOG_FILE, stderr=DN_LOG_FILE)
         with open(pid_file, 'a') as f:
             print(datanode_process.pid, file=f)
 
     with open(config_path,'w+') as f:
         json.dump(config, f)
 
-    
-    
+    cli = subprocess.run(["python3", "-m", "src.cli.client", config_path], stdin=stdin)    

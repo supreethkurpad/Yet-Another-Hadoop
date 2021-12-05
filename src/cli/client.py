@@ -9,8 +9,8 @@ from time import sleep
 from termcolor import colored
 
 HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
-COLOR="red"
-
+COLOR="cyan"
+TERM_ROWS=50
 class Client:
     def __init__(self,config_path):
         self.config_path= config_path
@@ -149,7 +149,7 @@ class Client:
             try:
                 if(self.params[0]=='exit'):
                     break
-                        
+
                 if(self.params[0]=='put'):
                     if len(self.params)<2:
                         print("Incorrect number of parameters, enter file path and hdfs dir")
