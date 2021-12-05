@@ -12,15 +12,15 @@ mkdir tmp
 mkdir configs
 echo  '{
     "block_size": 4096,
-    "path_to_datanodes": "/home/suvigya/PythonCode/Yet-Another-Hadoop/directories/datanodes",
-    "path_to_namenodes": "/home/suvigya/PythonCode/Yet-Another-Hadoop/directories/namenodes",
+    "path_to_datanodes": "'$MYHADOOP_HOME'/directories/datanodes",
+    "path_to_namenodes": "'$MYHADOOP_HOME'/directories/namenodes",
     "replication_factor": 3,
     "num_datanodes": 4,
     "datanode_size": 10240,
     "sync_period": 10,
-    "datanode_log_path": "/home/suvigya/PythonCode/Yet-Another-Hadoop/directories/datanodes/logs",
-    "namenode_log_path": "/home/suvigya/PythonCode/Yet-Another-Hadoop/directories/namenodes/logs",
-    "namenode_checkpoints": "/home/suvigya/PythonCode/Yet-Another-Hadoop/directories/checkpoints",
+    "datanode_log_path": "'$MYHADOOP_HOME'/directories/datanodes/logs",
+    "namenode_log_path": "'$MYHADOOP_HOME'/directories/namenodes/logs",
+    "namenode_checkpoints": "'$MYHADOOP_HOME'/directories/checkpoints",
     "fs_path": "user/",
-    "dfs_setup_config": "/home/suvigya/PythonCode/Yet-Another-Hadoop/configs/dfs_setup_config.json"
+    "dfs_setup_config": "'$MYHADOOP_HOME'/configs/dfs_setup_config.json"
 }' | cat >> configs/config.json 
