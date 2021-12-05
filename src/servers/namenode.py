@@ -1,5 +1,4 @@
-from posixpath import dirname
-from flask import Flask, config, jsonify, request
+from flask import Flask, jsonify, request
 from datetime import datetime 
 import json
 import os
@@ -11,13 +10,12 @@ import time
 import requests
 import subprocess
 from pathlib import Path
-from shutil import copyfile, copytree
+from shutil import copytree
 
 from src.servers.edit_log import LogWriter, LogReader, Operation
 from src.utils.state import DataNodeState
 from src.utils.hash import hash
 from src.utils.port_finder import getPortNumbers
-from src.utils.make_import_path import make_import_path
 
 
 """
