@@ -1,9 +1,9 @@
 #!/bin/bash
 
-python -m venv $MYHADOOP_HOME/hadoop_env
+python3 -m venv $MYHADOOP_HOME/hadoop_env
 chmod +x  $MYHADOOP_HOME/hadoop_env/bin/activate
 . $MYHADOOP_HOME/hadoop_env/bin/activate
-pip install -r $MYHADOOP_HOME/requirements.txt
+pip3 install -r $MYHADOOP_HOME/requirements.txt
 cd $MYHADOOP_HOME
 mkdir directories
 mkdir directories/namenodes
