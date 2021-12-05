@@ -93,7 +93,7 @@ if ffile['code']== '1':
     exit(0)
 elif ffile['code'] == '0':
     dnodes = ffile['data'].split('\n')
-    os.truncate(tmppath, 0)
+    mapop=''
     for dn in dnodes:
         dn=dn.rstrip()
         if(dn!=""):
@@ -101,16 +101,18 @@ elif ffile['code'] == '0':
             for p in dnode_dict.keys():
                 data=requests.get('http://localhost:'+str(dnn_ports[int(p)-1])+'/read/'+str(dnode_dict[p]))
                 dd =data.json()
-                if(data is None):
+                if(dd['data'] is None):
                     print("datanode down")
                 else:
-                    cmd = "python "+args.mapper+" | sort | python "+args.reducer
-                    ps = subprocess.Popen(cmd,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
-                    ps.stdin.write(bytes(dd['data'], 'utf-8'))
-                    output = ps.communicate()[0]
-                    result = output.decode()
-                    with open(tmppath,'a') as f:
-                        f.write(result)
+                    mapop+=dd['data']
+                    break
+    cmd = "python "+args.mapper+" | sort | python "+args.reducer
+    ps = subprocess.Popen(cmd,shell=True,stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+    ps.stdin.write(bytes(mapop, 'utf-8'))
+    output = ps.communicate()[0]
+    result = output.decode()
+    with open(tmppath,'w') as f:
+        f.write(result)
     res=putresult(args.config,args.output,'output.txt')
     with open(tmppath,'w') as f:
                         f.write(res)
