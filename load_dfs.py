@@ -47,20 +47,25 @@ if __name__ == '__main__':
     
 
     if len(argv) < 2:
-        print("Incorrect usage.Expected python3 start-all.py /path/to/dfs_setup_config ")
-        exit(1)
-    config_path = argv[1]
+        config_path =  os.path.join(HADOOP_HOME, 'logs', 'previous_config.json')
+        if os.path.getsize(config_path) == 0:
+            print("Incorrect Usage. Please specify the config path")
+            exit(1)
+    else:
+        config_path = argv[1]
     
     # read config
     config = {}
     with open(config_path, 'r') as f:
-        config = json.load(f) 
+        config = json.load(f)
 
     if(config["num_loads"] == 0):
         prompt(config)
 
     config["num_loads"]+=1
 
+    with open(os.path.join(HADOOP_HOME, 'logs', 'previous_config.json'), 'w') as f:
+        json.dump(config, f)
 
     # set up logging paths. writes to /dev/null by default 
     #DN_LOG_FILE = config.get('datanode_log_path', NULL_FILE)
