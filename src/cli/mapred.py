@@ -6,12 +6,16 @@ import requests
 import os
 import subprocess
 import math
+from time import sleep
+
+HADOOP_HOME=os.environ.get('MYHADOOP_HOME','/home/swarupa/College/Sem5/Yet-Another-Hadoop/')
+tmppath = os.path.join(HADOOP_HOME, 'tmp', 'temp.txt')
 
 def partition(metadata,config):
     with open(config['path_to_ports'],'r') as f:
         ports=f.read().splitlines()
         
-    with open('tmp/temp.txt', 'rb') as f: 
+    with open(tmppath, 'rb') as f: 
         dnodes=metadata.split('\n')
         for dn in dnodes:
             dn=dn.rstrip()
@@ -49,7 +53,7 @@ def post(cpath,port,cmd,data):
 def putresult(cpath,oppath,opfile):
     with open(os.path.join(HADOOP_HOME, args.config), 'r') as f:
         config = json.load(f)
-    file_size = os.path.getsize('tmp/temp.txt')
+    file_size = os.path.getsize(tmppath)
     res = post(cpath,config['pnn_port'],'put',{"filepath":opfile,"path_in_fs":oppath,\
             "size":math.ceil(file_size/config['block_size'])})
     res=res.json()
@@ -89,6 +93,7 @@ if ffile['code']== '1':
     exit(0)
 elif ffile['code'] == '0':
     dnodes = ffile['data'].split('\n')
+    os.truncate(tmppath, 0)
     for dn in dnodes:
         dn=dn.rstrip()
         if(dn!=""):
@@ -104,10 +109,10 @@ elif ffile['code'] == '0':
                     ps.stdin.write(bytes(dd['data'], 'utf-8'))
                     output = ps.communicate()[0]
                     result = output.decode()
-                    with open('tmp/temp.txt','a') as f:
+                    with open(tmppath,'a') as f:
                         f.write(result)
     res=putresult(args.config,args.output,'output.txt')
-    with open('tmp/temp.txt','w') as f:
+    with open(tmppath,'w') as f:
                         f.write(res)
     res2=putresult(args.config,args.output,'status.txt')
 

@@ -1,4 +1,5 @@
 import os
+import subprocess
 import requests
 import sys
 import json
@@ -148,6 +149,7 @@ class Client:
 
             try:
                 if(self.params[0]=='exit'):
+                    # subprocess.run("python3 -m unload_dfs")
                     break
 
                 if(self.params[0]=='put'):
@@ -252,5 +254,6 @@ if __name__ == '__main__':
         new_client.startReqHandler()
 
     except KeyboardInterrupt:
+        # subprocess.run("python3 -m unload_dfs")
         exit(0)
                 

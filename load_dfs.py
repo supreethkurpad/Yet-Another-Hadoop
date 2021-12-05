@@ -45,7 +45,7 @@ def prompt(config):
 
 
 def dispConfig(config):
-    print(config)
+    print("Using config:\n", json.dumps(config, indent=2))
 
 if __name__ == '__main__':
     
