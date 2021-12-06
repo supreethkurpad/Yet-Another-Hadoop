@@ -45,16 +45,15 @@ def prompt(config):
 
 
 def dispConfig(config):
-    print("Using config:\n", json.dumps(config, indent=2))
+    print("Using config:\n", json.dumps(config, indent=4))
 
-if __name__ == '__main__':
-    
 
+def main():
     if len(argv) < 2:
-        config_path =  os.path.join(HADOOP_HOME, 'logs', 'previous_config.json')
-        if os.path.getsize(config_path) == 0:
-            print("Incorrect Usage. Please specify the config path")
-            exit(1)
+            config_path =  os.path.join(HADOOP_HOME, 'logs', 'previous_config.json')
+            if os.path.getsize(config_path) == 0:
+                print("Incorrect Usage. Please specify the config path")
+                exit(1)
     else:
         config_path = argv[1]
     
@@ -109,13 +108,13 @@ if __name__ == '__main__':
 
     #add path to argpath
     config['path_to_argpath']=argpath
-       
+    
     # start namenode process
-  
+
     namenode_process = subprocess.Popen(['python3', "-m", namenode, argpath], stdout=NN_LOG_FILE, stderr=NN_LOG_FILE)
     # log pid to tmp file so stop-all can terminate it.
     with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'w+') as f:
-       print(namenode_process.pid, file=f)
+        print(namenode_process.pid, file=f)
 
     # Repeating Process for Secondary NameNode
     s_namenode = make_import_path(os.path.relpath(os.path.join(HADOOP_HOME, 'src', 'servers', 'namenode.py')))
@@ -132,7 +131,7 @@ if __name__ == '__main__':
     s_namenode_process = subprocess.Popen(['python3', '-m', s_namenode, s_argpath], stdout=NN_LOG_FILE, stderr=NN_LOG_FILE)
     # log pid to tmp file so stop-all can terminate it.
     with open(os.path.join(HADOOP_HOME, 'tmp', 'pids.txt'), 'a') as f:
-       print(s_namenode_process.pid, file=f)
+        print(s_namenode_process.pid, file=f)
 
     # Starting datanodes
     numD = config['num_datanodes']
@@ -153,4 +152,13 @@ if __name__ == '__main__':
     with open(config_path,'w+') as f:
         json.dump(config, f)
 
-    cli = subprocess.run(["python3", "-m", "src.cli.client", config_path], stdin=stdin)    
+    cli = subprocess.run(["python3", "-m", "src.cli.client", config_path], stdin=stdin)
+
+if __name__ == '__main__':
+    
+    try:
+        main()    
+    except KeyboardInterrupt as e:
+        pass
+
+    print("\nShutting down all namenodes, datanodes and client")

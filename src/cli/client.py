@@ -149,7 +149,7 @@ class Client:
 
             try:
                 if(self.params[0]=='exit'):
-                    # subprocess.run("python3 -m unload_dfs")
+                    unload()
                     break
 
                 if(self.params[0]=='put'):
@@ -220,17 +220,13 @@ class Client:
                         continue
                     res=self.post(self.p_port,self.params[0],{"fspath":self.params[1]})
                     #expects response as file
-                    self.getfileblocks(res)
-
-                    
-                    
+                    self.getfileblocks(res)        
 
             except Exception as e:
                 print(e)
 
-
-
-        
+def unload():
+    subprocess.Popen(["python3", "-m", "src.unload_dfs"])
 
 if __name__ == '__main__':
     try:
@@ -245,15 +241,11 @@ if __name__ == '__main__':
             exit(1)
 
         #get configs
-        
-
-        #get ports
-        
         new_client = Client(config_path)
-
+       
+        #get ports
         new_client.startReqHandler()
 
     except KeyboardInterrupt:
-        # subprocess.run("python3 -m unload_dfs")
-        exit(0)
-                
+        unload()
+                        
