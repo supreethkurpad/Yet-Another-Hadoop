@@ -103,14 +103,14 @@ class LogWriter:
             for op in ops:
                 f.write(op.to_string())
     
-if __name__ == '__main__':
+# if __name__ == '__main__':
     # Sample Usage
-    op1 = Operation('mkdir', 'test')
-    op2 = Operation('put', 'test/test1.txt', 'Hello World')
-    op3 = Operation('rm', 'test/test1.txt')
-    op4 = Operation('rmdir', 'test')
-    lw = LogWriter([op1, op2, op3, op4])
-    lw.write_logs('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/logs/edits.txt')
+    # op1 = Operation('mkdir', 'test')
+    # op2 = Operation('put', 'test/test1.txt', 'Hello World')
+    # op3 = Operation('rm', 'test/test1.txt')
+    # op4 = Operation('rmdir', 'test')
+    # lw = LogWriter([op1, op2, op3, op4])
+    # lw.write_logs('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/logs/edits.txt')
 
-    lr = LogReader('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/namenode2')
-    lr.read_log('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/logs/edits.txt')
+    # lr = LogReader('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/namenode2')
+    # lr.read_log('/mnt/c/Users/supre/BD/Yet-Another-Hadoop/directories/namenodes/logs/edits.txt')
